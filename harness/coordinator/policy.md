@@ -1,11 +1,8 @@
-# Coordinator Policy
-
-_Template — fill in per-project defaults, adjust as needed._
+# Coordinator Policy (Game Night v1)
 
 ## Retry bound
 
-Maximum retries before escalating to the user: **3** (default — override
-per-project if stated otherwise).
+Maximum retries before escalating to the user: **3**.
 
 ## Escalation trigger
 
@@ -27,12 +24,27 @@ On escalation:
 
 ## Timeout behavior
 
-_Fill in: how long the coordinator waits for a role to respond before
-treating it as unresponsive, and what happens then (retry the wait once?
-escalate immediately?)._
+_Proposed default, not yet confirmed by user — flag as open in the first
+escalation log entry if this hasn't been explicitly approved by the time
+it's first needed:_
+
+The coordinator invokes each role (Generator, Evaluator) as a synchronous
+subprocess (`claude -p ...`) per run, so "timeout" here means "the
+subprocess call itself hangs or errors," not an async wait on a human
+inbox (this is the harness loop's own Generator↔Evaluator timing, not the
+in-game 24h player round window, which is a separate, already-decided
+game-mechanic parameter in `config.json`).
+
+- Default subprocess timeout: 10 minutes per role invocation.
+- On timeout: retry the same role invocation once. If it times out again,
+  treat this as an escalation trigger (role failed to respond).
 
 ## What does NOT count against the retry bound
 
-_Fill in if applicable — e.g., a dashboard-support role's failure to render
-a view should probably not block/retry the generation-evaluation loop
-itself._
+- Any future dashboard-support role's failure to render a view does not
+  block or retry the Generator/Evaluator loop itself (not implemented in
+  v1, noted for when it is).
+- A subprocess timeout that succeeds on its one automatic retry (see
+  above) does not count as a used retry against the 3-retry bound — that
+  bound is about failing verdicts, not transient infra hiccups.
+

@@ -103,6 +103,7 @@ invoke_role() {
     "$CLAUDE_BIN" -p \
       --model "$model" \
       --add-dir "$DELIVERABLE_DIR" \
+      --permission-mode acceptEdits \
       --append-system-prompt "You are the ${role} role for the Game Night v1 harness run. Follow your role instructions and spec exactly. Work only inside $DELIVERABLE_DIR (the deliverable repo, separate from the harness repo). Commit and push your own changes to this repo's git remote when you're done, with a clear commit message. Do not modify the harness repo." \
       "$(cat <<PROMPT
 Your role instructions (roles/${role}.md):

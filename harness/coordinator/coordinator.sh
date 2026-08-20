@@ -147,14 +147,60 @@ escalate() {
     echo "- **Run:** ${run_id}"
     echo "- **Time:** $(now_iso)"
     echo "- **Reason:** ${reason}"
-    echo "- **Spec ref:** $(git -C "$HARNESS_DIR" rev-parse HEAD 2>/dev/null || echo unknown)"
+    echo "- **Spec ref:** ${CURRENT_SPEC_REF}"
+    echo "- **Status:** open"
   } > "$TMP/${fname}"
   run_fulcra file upload "$TMP/${fname}" "${TEAM_PREFIX}/escalation/${fname}"
+  # Also write/refresh a stable "latest open escalation" pointer so an
+  # unattended (cron) invocation can cheaply check "is there already an
+  # open escalation for the current spec?" without listing the whole
+  # escalation/ directory.
+  {
+    echo "spec_ref: ${CURRENT_SPEC_REF}"
+    echo "escalation_file: ${fname}"
+    echo "reason: ${reason}"
+    echo "timestamp: $(now_iso)"
+  } > "$TMP/latest-escalation.md"
+  run_fulcra file upload "$TMP/latest-escalation.md" "${TEAM_PREFIX}/escalation/.latest.md"
   echo "== ESCALATION (run ${run_id}): ${reason} ==" >&2
   echo "Logged durably to ${TEAM_PREFIX}/escalation/${fname}" >&2
 }
 
 echo "== Coordinator starting for team/${TEAM_NAME} (retry bound: ${RETRY_BOUND}) =="
+
+CURRENT_SPEC_REF="$(git -C "$HARNESS_DIR" rev-parse HEAD 2>/dev/null || echo unknown)"
+
+# --- Do-nothing short-circuit: if this exact spec version already has a
+#     recorded PASS, there's nothing new to converge on. This matters most
+#     for unattended/cron invocations, which would otherwise burn a real
+#     Generator+Evaluator subprocess call every tick even after success. ---
+CONVERGED_MARKER="$TMP/converged-check.md"
+if run_fulcra file download "${TEAM_PREFIX}/converged.md" "$CONVERGED_MARKER" >/dev/null 2>&1; then
+  converged_spec_ref="$(grep -oE '^spec_ref:\s*\S+' "$CONVERGED_MARKER" | awk '{print $2}' || true)"
+  if [ -n "$converged_spec_ref" ] && [ "$converged_spec_ref" = "$CURRENT_SPEC_REF" ]; then
+    echo "== Already converged for spec_ref ${CURRENT_SPEC_REF} -- nothing new to do. Skipping run. =="
+    echo "(To force a re-run, update spec.md and commit the harness, or delete ${TEAM_PREFIX}/converged.md.)"
+    exit 0
+  fi
+fi
+
+# --- Do-nothing short-circuit #2: if there's already an open escalation
+#     for the current spec version, don't silently re-attempt retries on
+#     an unattended tick -- that would burn tokens re-discovering the
+#     same blocker instead of waiting for the user to resolve it. A human
+#     (or an explicit re-run after resolving the blocker) can still force
+#     progress by deleting/resolving the .latest.md pointer, or by
+#     revising spec.md (which changes CURRENT_SPEC_REF and naturally
+#     un-blocks this check). ---
+LATEST_ESCALATION_MARKER="$TMP/latest-escalation-check.md"
+if run_fulcra file download "${TEAM_PREFIX}/escalation/.latest.md" "$LATEST_ESCALATION_MARKER" >/dev/null 2>&1; then
+  open_spec_ref="$(grep -oE '^spec_ref:\s*\S+' "$LATEST_ESCALATION_MARKER" | awk '{print $2}' || true)"
+  if [ -n "$open_spec_ref" ] && [ "$open_spec_ref" = "$CURRENT_SPEC_REF" ]; then
+    echo "== There is already an open escalation for spec_ref ${CURRENT_SPEC_REF}. Not re-attempting automatically. =="
+    echo "See ${TEAM_PREFIX}/escalation/.latest.md for details. Resolve it, or revise spec.md, before the next run."
+    exit 1
+  fi
+fi
 
 run_id=1
 prior_verdict_summary="(none -- this is run 1, no prior feedback)"
@@ -196,6 +242,12 @@ while [ "$run_id" -le "$MAX_LOOPS" ]; do
   if [ "$overall" = "PASS" ]; then
     echo "== Run ${run_id}: PASS -- halting successfully ==" >&2
     run_fulcra file upload "$TMP/verdict-run${run_id}.md" "${TEAM_PREFIX}/progress.md" 2>/dev/null || true
+    {
+      echo "spec_ref: ${CURRENT_SPEC_REF}"
+      echo "run_id: ${run_id}"
+      echo "timestamp: $(now_iso)"
+    } > "$TMP/converged.md"
+    run_fulcra file upload "$TMP/converged.md" "${TEAM_PREFIX}/converged.md"
     exit 0
   elif [ "$overall" = "FAIL" ]; then
     echo "== Run ${run_id}: FAIL -- looping =="

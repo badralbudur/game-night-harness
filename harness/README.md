@@ -6,6 +6,10 @@ execution history.
 
 ## What travels with the harness (this directory)
 
+- `RUNBOOK.md` — how to actually execute this harness: who runs it,
+  prerequisites, on-demand vs. unattended/cron execution, how to adapt
+  the coordinator to a different model/agent provider than the default.
+  Read this first if you're picking up a ported copy cold.
 - `spec.md` — the current, synthesized, structured specification: requirements,
   generation rules, evaluation criteria. Immutable *during* a run; updated
   only between runs, deliberately, as the mechanism for changing target

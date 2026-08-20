@@ -133,46 +133,99 @@ Numbered and traceable to `decisions.md` tags in brackets.
     actual history, treating each city's non-chosen exports as "excess."
     [newspaper, endgame, Q24]
 
-### Harness generation tasks (not gameplay — one-time setup outputs)
-33. The harness's Generator role must produce, as an early deliverable
-    (not left to the user): (a) a seeded import-need list, and (b) a good
-    name for the game/newspaper — not a placeholder. [harness-process,
-    imports, naming, Q8, Q28]
+### Game content the Generator must produce
+33. The seeded import-need list and the game/newspaper's name are part of
+    the deliverable itself (game content), not a separate harness-side
+    output. The Generator role produces both, early, as part of building
+    the deliverable — the name must be good, not a placeholder; the
+    import list seeds real gameplay (#13) and can be extended by players
+    during play. [harness-process, imports, naming, Q8, Q28]
+
+### Roles & process integrity
+34. Generator and Evaluator (and any future additional roles) must run as
+    genuinely separate subagents/sessions, not a single session
+    switching personas — this applies to the harness loop itself, not
+    only to simulated players (#23 above already required this for
+    multiplayer simulation; this extends it to Generator/Evaluator/etc.
+    within any single run). [roles, harness-process]
+35. Deliverable changes are committed to git once per harness run/round,
+    in a repository separate from the harness's own git history — the
+    harness repo and the deliverable repo must not be the same repo or
+    share commit history. [harness-process, git]
 
 ## Generation Rules
 
 - Build against real Fulcra Workspaces primitives (inboxes, shared files)
   for v1 — no `fulcra-agent-coordination` engine. [harness-process]
-- Use real spawned subagents to simulate distinct simulated players during
-  harness evaluation of multiplayer mechanics — not one session
-  role-playing multiple personas. Simulated players should vary in
-  engagement level (some more/less responsive) to validate graceful
-  handling of disengagement. [architecture, testing, Q14, Q23]
+- Every role (Generator, Evaluator, and any future additional roles) runs
+  as a genuinely separate subagent/session — never a single session
+  switching personas to play multiple roles. This applies both to the
+  harness loop's own roles and to simulated players used in evaluation.
+  [architecture, testing, roles, Q14, Q23, Q34]
 - The harness may use different models for different roles where
   appropriate (e.g. a creative-writing-heavy newspaper/image role vs. a
   strict rules-adherence evaluator role) rather than one fixed model
   throughout. [harness-process, Q28]
-- Exposure/visibility policy (leaderboard visibility, question-answer
-  attribution style, anonymity level) must be implemented as configurable
-  parameters, not hardcoded, per decisions Q7/Q22/Q26/Q27.
+- All configurable parameters (round window, import repetition rule,
+  exposure/visibility policy, question cadence, max players, etc.) live
+  in a single `config.json` in the deliverable's own repo/workspace state
+  — not hardcoded in role instructions or scattered across files. Roles
+  read it; nothing re-derives config values independently.
+- Deliverable changes are committed to git once per round/run, in a git
+  repository that is separate from the harness's own git repository (no
+  shared history). The harness tracks its own template/process evolution;
+  the deliverable tracks the game's own build history independently.
+  [harness-process, git, Q35]
 
 ## Evaluation Criteria
 
-_To be fleshed out in detail when the Evaluator role is authored (Harness
-Scaffolding phase). At minimum must cover:_
-- Round-timer lockstep correctness (#9–#12).
-- Blind-voting integrity: exporter identity never leaked to importer or
-  in the newspaper for non-winning submissions (#18, #21).
-- Fallback correctness: no-submission skip (#16), zero-submission
-  ramp-up (#17), no-pick-by-deadline even split (#19).
-- Join-timing correctness: queue append only after first export, rotation
-  count based on join timing (#5, #12).
-- City uniqueness/reassignment logic (#2).
-- Newspaper cadence, archive browsability, and privacy (city/mayor-only
-  identification) (#26–#28).
-- Tone/content review of generated newspaper text for the "funny, not
-  snide" bar — likely requires subjective judgment; the evaluator role
-  should state explicitly which criteria are deterministic vs. judged.
+Deterministic checks (script/rule-based, no subjective judgment):
+- Round-timer lockstep: exactly one round timer; every round opens one
+  import, closes one export window, resolves one winner in the correct
+  order (#9–#12).
+- Blind-voting integrity: exporter identity never surfaced to the
+  importer during voting, and never leaked in the newspaper for
+  non-winning submissions, before or after the round resolves (#18, #21).
+- Fallback logic: no-submission-by-a-player is a silent skip (#16);
+  zero-submissions-at-all triggers the "ramp up own industry" path with
+  profit still awarded (#17); no-pick-by-deadline triggers the even-split
+  path (#19).
+- Join-timing correctness: a joining player is queued only after their
+  first export; rotation-count assignment (2 imports vs 1) matches
+  whether they joined before or after rotation 1 closed (#5, #12).
+- City uniqueness/reassignment: duplicate city picks are reassigned to a
+  geographically close alternative, never silently allowed to collide
+  (#2).
+- Import repetition rule: a category may repeat across different cities
+  but never repeats for the same city (#14), unless config overrides it.
+- Newspaper mechanics: publishes exactly once per round, prior editions
+  remain reachable at the same URL (archive, not overwrite), city/mayor
+  identity only (never real name/handle) (#26–#28).
+- `config.json` is the single source for every configurable parameter;
+  no role hardcodes a value that config.json defines.
+
+Judged checks (require an explicit rendering of subjective judgment,
+performed by the Evaluator role or a named sub-role — state which):
+- Newspaper tone: funny, fun, colorful; pointed humor is fine but must
+  not read as snide or mean (#30). Evaluator should give concrete
+  pass/fail reasoning (e.g. quote the line that crossed the line) rather
+  than a bare verdict.
+- Aggregate-answer phrasing quality: "the world"/"some
+  countries"/"most nations" framing (#25) should plausibly and correctly
+  reflect the underlying answer distribution — not just present-looking
+  language over an actually-wrong aggregate.
+- Endgame content quality: the twist article and per-city descriptions/
+  images should be clearly informed by actual game history (not generic
+  filler), and per-city images/descriptions should sensibly incorporate
+  that city's own non-chosen exports as "excess" (#31–#32).
+- Import-list and game-name quality: the generated seed list should be
+  varied and gameable (not degenerate/repetitive), and the name should
+  read as a deliberately chosen, good name, not a placeholder (#33).
+
+Any criterion that turns out to be untestable as written (ambiguous,
+unable to render a verdict either way) must be reported explicitly as its
+own finding, per `coordinator/policy.md`'s escalation trigger — not
+silently passed or failed.
 
 ## Out of Scope (v1)
 

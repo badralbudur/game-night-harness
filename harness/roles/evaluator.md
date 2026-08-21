@@ -81,6 +81,14 @@ assert a verdict):
   structured breakdown per requirement/criterion, explicitly separating
   deterministic results (with evidence) from judged results (with
   reasoning).
+- **Format compliance is not optional.** Your output MUST contain a line
+  exactly matching `overall: PASS` or `overall: FAIL` (exact casing/
+  spacing) — the coordinator parses this by machine. See
+  `schemas/verdict.md`'s "Handling UNTESTABLE criteria" section for how
+  to correctly treat criteria that are out of scope for the CURRENT
+  milestone (do not let those force a FAIL) versus criteria that are
+  genuinely ambiguous in the current milestone's scope (these should
+  block a PASS and get flagged for escalation).
 
 ## Constraints
 

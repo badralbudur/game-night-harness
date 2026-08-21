@@ -336,7 +336,7 @@ while [ "$run_id" -le "$MAX_LOOPS" ]; do
   echo "$eval_output" > "$TMP/verdict-run${run_id}.md"
   run_fulcra file upload "$TMP/verdict-run${run_id}.md" "${TEAM_PREFIX}/artifact/${CURRENT_MILESTONE_ID}-verdict-run${run_id}.md" >/dev/null 2>&1
 
-  overall="$(grep -oE 'overall:\s*(PASS|FAIL)' "$TMP/verdict-run${run_id}.md" | head -1 | awk '{print $2}' || true)"
+  overall="$(grep -oiE 'overall:[[:space:]]*(PASS|FAIL)' "$TMP/verdict-run${run_id}.md" | head -1 | awk '{print toupper($2)}' || true)"
 
   if [ "$overall" = "PASS" ]; then
     echo "== Milestone ${CURRENT_MILESTONE_ID}: PASS (attempt ${run_id}) ==" >&2

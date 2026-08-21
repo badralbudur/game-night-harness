@@ -302,6 +302,13 @@ prepare_milestone_branch() {
   slug="$(printf '%s' "$milestone_title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-|-$//g')"
   MILESTONE_BRANCH="milestone/${milestone_id,,}-${slug}"
 
+  # The declared Python test runner creates bytecode caches. They are
+  # neither Generator artifact changes nor a reason to block a corrective
+  # branch; remove only these known ephemeral runtime artifacts before the
+  # real dirty-tree guard. Do NOT broadly clean untracked files here.
+  find "$DELIVERABLE_DIR" -type d -name '__pycache__' -prune -exec rm -rf {} + 2>/dev/null || true
+  find "$DELIVERABLE_DIR" -type f -name '*.py[co]' -delete 2>/dev/null || true
+
   if [ -n "$(git -C "$DELIVERABLE_DIR" status --porcelain)" ]; then
     escalate "Deliverable working tree is dirty before preparing ${milestone_id}; refusing to switch branches and risk mixing work." 0 "$milestone_id"
     return 1

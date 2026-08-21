@@ -2,22 +2,21 @@
 
 ## Retry policy
 
-- **Automatic retries enabled:** **false** (current interactive/manual-run
-  mode).
+- **Automatic retries enabled:** **true** (current unattended/weekend
+  mode; bounded by the maximum below).
 - **Maximum automatic retries when enabled:** **3**.
 
-The retry mechanism remains part of the harness because unattended mode
-(e.g. cron) may need bounded autonomous convergence. But while a human is
-watching runs from Discord and actively shaping the harness, automatic
-retries are deliberately disabled: a Generator/Evaluator failure or a
-role/subprocess failure stops after its first attempt, writes the durable
-escalation record, and returns control to the operator. The operator can
-review the evidence, adjust the harness/spec/process if needed, then
-explicitly invoke a fresh coordinator run.
+The retry mechanism is enabled for this unattended weekend schedule so the
+harness can make bounded autonomous convergence attempts. The maximum is
+still an operator-visible bound, not a background infinite loop: every
+attempt is durably logged and an exhausted retry budget escalates.
 
-When enabling unattended operation later, change `Automatic retries
-enabled` to **true** and retain the bounded retry count above; do not
-silently change this behavior in coordinator code.
+For interactive/manual operation, deliberately change `Automatic retries
+enabled` to **false** before running. In that mode a Generator/Evaluator
+failure or role/subprocess failure stops after its first attempt, writes
+the durable escalation record, and returns control to the operator. Do not
+silently change this behavior in coordinator code; the policy is the
+source of truth.
 
 ## Escalation trigger
 

@@ -159,8 +159,21 @@ invoke_role_once() {
       'Bash(git diff *)'
       'Bash(git log *)'
       'Bash(git rev-parse *)'
+      'Bash(python3 run_tests.py*)'
+      'Bash(python3 -m unittest *)'
     )
     role_git_instruction="You are on Coordinator-created branch ${MILESTONE_BRANCH}. You must commit and push your own milestone artifact on that branch; do not create branches, merge PRs, or modify main."
+  elif [ "$role" = "evaluator" ]; then
+    # Evaluator needs to execute the deliverable's declared deterministic
+    # test runner. Do not grant arbitrary Python shell access; permit only
+    # the project runner / stdlib unittest invocation, and retain the
+    # evaluator's no-write role contract in its instructions.
+    role_permission_args=(
+      --allowedTools
+      'Bash(python3 run_tests.py*)'
+      'Bash(python3 -m unittest *)'
+    )
+    role_git_instruction="You are read/test-only. Do not stage, commit, push, create branches, or merge PRs."
   else
     role_git_instruction="You are read/test-only. Do not stage, commit, push, create branches, or merge PRs."
   fi
@@ -561,6 +574,18 @@ while [ "$run_id" -le "$MAX_LOOPS" ]; do
   run_fulcra file upload "$TMP/verdict-run${run_id}.md" "${TEAM_PREFIX}/artifact/${CURRENT_MILESTONE_ID}-verdict-run${run_id}.md" >/dev/null 2>&1
 
   overall="$(grep -oiE 'overall:[[:space:]]*(PASS|FAIL)' "$TMP/verdict-run${run_id}.md" | head -1 | awk '{print toupper($2)}' || true)"
+
+  # A declared executable test runner is a gate, not optional prose in a
+  # verdict. M2 exposed why: static/manual tracing can look convincing
+  # while a real suite still catches a defect. Require an exact passing
+  # runner signal whenever the deliverable provides run_tests.py.
+  if [ -f "$DELIVERABLE_DIR/run_tests.py" ]; then
+    test_runner="$(grep -oiE 'test_runner:[[:space:]]*(PASS|FAIL)' "$TMP/verdict-run${run_id}.md" | head -1 | awk '{print toupper($2)}' || true)"
+    if [ "$test_runner" != "PASS" ]; then
+      escalate "Evaluator verdict for ${CURRENT_MILESTONE_ID}, attempt ${run_id} lacks test_runner: PASS even though the deliverable declares run_tests.py (found: ${test_runner:-none}). Executable deterministic evidence is required before approval." "$run_id" "$CURRENT_MILESTONE_ID"
+      exit 1
+    fi
+  fi
 
   if [ "$overall" = "PASS" ]; then
     echo "== Milestone ${CURRENT_MILESTONE_ID}: PASS (attempt ${run_id}) ==" >&2

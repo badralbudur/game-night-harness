@@ -17,10 +17,12 @@ Evaluation splits into two kinds of checks — grade each criterion in the
 correct category and use the corresponding method:
 
 ### Deterministic checks (script/rule-based)
-For each of the following, write or run a small test/check against the
-actual game engine state/logs (not just against the spec text) and
-record PASS/FAIL with concrete evidence (what you ran, what you
-observed):
+For each of the following, run the deliverable's declared test runner
+(`python3 run_tests.py`) and/or a focused standard-library unittest
+invocation against the actual game engine state/logs — never substitute
+manual code tracing for an executable deterministic test merely because a
+permission prompt is inconvenient. Record PASS/FAIL with concrete
+evidence (command run, output observed):
 - Round-timer lockstep (spec #9-#12): exactly one round timer; every
   round opens one import, closes one export window, resolves one winner,
   in the correct order.
@@ -83,9 +85,13 @@ assert a verdict):
   reasoning).
 - **Format compliance is not optional.** Your output MUST contain a line
   exactly matching `overall: PASS` or `overall: FAIL` (exact casing/
-  spacing) — the coordinator parses this by machine. See
-  `schemas/verdict.md`'s "Handling UNTESTABLE criteria" section for how
-  to correctly treat criteria that are out of scope for the CURRENT
+  spacing) — the coordinator parses this by machine. If the deliverable
+  has a declared executable test runner (such as `run_tests.py`), you
+  MUST run it and include exact `test_runner: PASS` or `test_runner: FAIL`
+  in the verdict with command/count evidence. A blocked runner is a FAIL
+  and process escalation, not permission to substitute manual tracing.
+  See `schemas/verdict.md`'s "Handling UNTESTABLE criteria" section for
+  how to correctly treat criteria that are out of scope for the CURRENT
   milestone (do not let those force a FAIL) versus criteria that are
   genuinely ambiguous in the current milestone's scope (these should
   block a PASS and get flagged for escalation).

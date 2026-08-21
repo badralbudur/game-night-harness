@@ -45,6 +45,29 @@ Per-criterion, report:
   checks, show your actual evidence — command run, output observed —
   not just an assertion)
 
+## Executable deterministic-test evidence
+
+If the deliverable declares a test runner (for example `run_tests.py`, a
+package test command, or another milestone-defined runner), the Evaluator
+MUST execute it in its own session and include one exact line:
+
+```text
+test_runner: PASS
+```
+
+or:
+
+```text
+test_runner: FAIL
+```
+
+plus the executed command and a concise result/count in its evidence. A
+role permission/sandbox problem that prevents execution is **not** a
+license to replace deterministic testing with manual tracing: report it as
+a genuine in-scope process blocker, set `overall: FAIL`, and escalate.
+When a declared runner exists, `overall: PASS` requires `test_runner:
+PASS` as well as every in-scope criterion passing.
+
 ## Handling UNTESTABLE criteria
 
 Not every `UNTESTABLE` means the same thing. Distinguish:

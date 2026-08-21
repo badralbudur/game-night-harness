@@ -19,17 +19,12 @@ does not change the enforcement layer's behavior.
 
 **Fix:** add `--permission-mode acceptEdits` to the `claude -p`
 invocation in `coordinator.sh`'s `invoke_role()`. Verified with a minimal
-repro (`claude -p --model sonnet --add-dir <dir> --permission-mode
-acceptEdits "write a file..."`) before applying to the coordinator.
+repro before applying.
 
 **Value of separate-subagent evaluation (spec #34) demonstrated here:**
 the Evaluator, running as a genuinely independent session rather than a
 persona-switch, hit the *identical* blocker and reported it
-independently rather than trusting the Generator's self-report — this is
-exactly the kind of corroboration that would be impossible to get
-credibly from one session pretending to be two roles. Worth citing this
-finding in the PR #20 backport as evidence for why spec #34 (real
-subagents, not personas) matters in practice, not just in theory.
+independently rather than trusting the Generator's self-report.
 
 ## Finding 2: image-generation modality is genuinely ambiguous in spec.md (OPEN)
 
@@ -43,21 +38,38 @@ does a deterministic, game-state-informed procedural or LLM-authored SVG
 satisfy "generated image," or must an external raster image API be
 provisioned (and if so, which)?
 
-**Action needed:** user decision, then update `spec.md` accordingly
-(this is exactly the kind of ambiguity the escalation path exists to
-surface rather than let either role guess).
+**Action needed:** user decision, then update `spec.md` accordingly.
 
-## Finding 3: two-slot check-in on a fully idle round — spec read confirmed unambiguous (RESOLVED, no spec change needed)
+## Finding 3: two-slot check-in on a fully idle round — spec read confirmed unambiguous (RESOLVED)
 
-**Discovered:** run 1. The Generator flagged spec #23 (the two-slot
-per-round check-in) as possibly ambiguous for the case where a player
-has *zero* pending game actions in a round. The Evaluator, working
-independently, read the same spec text and concluded it is NOT
-ambiguous: slot (a) is simply unfilled when no game action is pending;
-slot (b) fires whenever a second game action isn't pending (covering
-both the zero-pending and one-pending cases) — so an idle round yields
-exactly one question, never two, never zero.
+**Discovered:** run 1. The Generator flagged spec #23 as possibly
+ambiguous for the case where a player has zero pending game actions. The
+Evaluator independently concluded it is not ambiguous: slot (a) is empty;
+slot (b) supplies exactly one question. No spec change needed.
 
-**Resolution:** Evaluator's reading is correct per the literal spec text;
-no spec change needed. Noting here so a future Generator retry doesn't
-re-raise the same non-issue.
+## Finding 4: a PASS without executable deterministic tests is provisional, not merge-worthy (OPEN — corrective M2 required)
+
+**Discovered:** M2 initially received an Evaluator PASS based on rigorous
+static/manual tracing because the Evaluator session was blocked from
+executing `python3 run_tests.py`. After the role permission contract was
+fixed, the declared suite was run directly against the merged M2 artifact:
+**139 tests ran, 138 passed, 1 errored**.
+
+The failing test is
+`tests/test_checkin_slots.py::SlotAllocationTest::test_slots_report_the_one_shared_round_deadline`:
+a check-in slot lacks the expected `deadline` field (`KeyError:
+'deadline'`). This is an actual M2 artifact defect that static tracing
+missed.
+
+**Process fixes:**
+1. Generator and Evaluator receive narrow permission to execute the
+   deliverable's declared test runner (`python3 run_tests.py`) and
+   standard-library unittest only.
+2. Evaluator instructions now require executable deterministic evidence;
+   manual tracing may supplement, never replace, executed tests.
+3. A milestone may not merge on a PASS whose deterministic in-scope tests
+   could not run. Such a verdict must be `FAIL`/escalation until test
+   execution is available.
+4. M2 is reopened as a corrective milestone; workspace progress must not
+   advance to M3 until the real suite passes in a separate Evaluator
+   session.

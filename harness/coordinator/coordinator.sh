@@ -329,6 +329,21 @@ write_status_summary() {
     echo "$next"
   } > "$TMP/status-summary.md"
   run_fulcra file upload "$TMP/status-summary.md" "${TEAM_PREFIX}/status-summary.md" >/dev/null 2>&1 || true
+
+  # Optional, non-portable integration hook: this portable harness never
+  # assumes a dashboard host/provider, but an operator may set
+  # DASHBOARD_PUBLISH_HOOK to an executable that reads the durable
+  # workspace summary and publishes a curated dashboard. Its failure is a
+  # visible warning only -- it must never erase/mask the real run outcome.
+  if [ -n "${DASHBOARD_PUBLISH_HOOK:-}" ]; then
+    if [ -x "$DASHBOARD_PUBLISH_HOOK" ]; then
+      if ! "$DASHBOARD_PUBLISH_HOOK" "$TEAM_NAME" >&2; then
+        echo "WARNING: dashboard publish hook failed; harness outcome remains recorded in ${TEAM_PREFIX}/status-summary.md" >&2
+      fi
+    else
+      echo "WARNING: DASHBOARD_PUBLISH_HOOK is set but not executable: $DASHBOARD_PUBLISH_HOOK" >&2
+    fi
+  fi
 }
 
 escalate() {

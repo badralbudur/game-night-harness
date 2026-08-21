@@ -260,15 +260,25 @@ prepare_milestone_branch() {
       escalate "Coordinator created but could not push milestone branch ${MILESTONE_BRANCH}." 0 "$milestone_id"; return 1; }
   fi
 
-  # Create one reviewable PR per milestone, but retain it across Generator
-  # attempts/FAILs so the user sees the evolving branch rather than a
-  # succession of throwaway PRs.
+  # GitHub cannot create a PR for a branch with zero commits ahead of
+  # main. The branch is deliberately created now; ensure_milestone_pr()
+  # creates/resumes the PR immediately after Generator's first pushed
+  # commit and before Evaluator begins.
+  MILESTONE_PR_URL=""
+  echo "== Milestone branch prepared: ${MILESTONE_BRANCH} ==" >&2
+  return 0
+}
+
+ensure_milestone_pr() {
+  # Call only AFTER Generator has pushed a commit. Failed/escalated
+  # attempts retain this same open PR for inspection and subsequent
+  # Generator fixes.
   MILESTONE_PR_URL="$(gh pr list --repo badralbudur/game-night --head "$MILESTONE_BRANCH" --base main --state open --json url --jq '.[0].url' 2>/dev/null || true)"
   if [ -z "$MILESTONE_PR_URL" ]; then
-    MILESTONE_PR_URL="$(gh pr create --repo badralbudur/game-night --base main --head "$MILESTONE_BRANCH" --title "feat(${milestone_id,,}): ${milestone_title}" --body "Milestone ${milestone_id} for Game Night v1.\n\nThis PR is created by the harness coordinator before Generator work begins. Generator pushes each attempt here; Evaluator independently grades the committed branch. The coordinator merges only after an explicit PASS verdict." 2>/dev/null)" || {
-      escalate "Coordinator created branch ${MILESTONE_BRANCH} but could not create its GitHub PR." 0 "$milestone_id"; return 1; }
+    MILESTONE_PR_URL="$(gh pr create --repo badralbudur/game-night --base main --head "$MILESTONE_BRANCH" --title "feat(${CURRENT_MILESTONE_ID,,}): ${CURRENT_MILESTONE_TITLE}" --body "Milestone ${CURRENT_MILESTONE_ID} for Game Night v1.\n\nGenerator pushed the first milestone commit to this branch. Evaluator independently grades the committed branch. The coordinator merges only after an explicit PASS verdict." 2>/dev/null)" || {
+      escalate "Generator pushed ${MILESTONE_BRANCH}, but Coordinator could not create its GitHub PR before evaluation." "$run_id" "$CURRENT_MILESTONE_ID"; return 1; }
   fi
-  echo "== Milestone branch: ${MILESTONE_BRANCH}; PR: ${MILESTONE_PR_URL} ==" >&2
+  echo "== Milestone PR ready for evaluation: ${MILESTONE_PR_URL} ==" >&2
   return 0
 }
 
@@ -473,6 +483,9 @@ while [ "$run_id" -le "$MAX_LOOPS" ]; do
   # a separate Evaluator can grade the branch state.
   if ! verify_generator_handoff; then
     exit 1  # verify_generator_handoff already escalated
+  fi
+  if ! ensure_milestone_pr; then
+    exit 1  # PR creation failure already escalated
   fi
 
   {

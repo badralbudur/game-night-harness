@@ -127,10 +127,12 @@ to do" to any future invocation, attended or not.
 ## Milestone branches and review PRs
 
 Before each milestone run, the Coordinator creates (or resumes) a branch
-named `milestone/<id>-<slug>` in the **deliverable** repo and opens one
-private PR from that branch to `main`. The branch/PR persists across
-attempts: a FAIL or escalation leaves its committed work visible and
-reviewable rather than discarding it.
+named `milestone/<id>-<slug>` in the **deliverable** repo. GitHub cannot
+open a PR for a zero-diff branch, so after Generator pushes its first
+milestone commit the Coordinator opens one private PR from that branch to
+`main` **before** Evaluator runs. The branch/PR persists across attempts:
+a FAIL or escalation leaves its committed work visible and reviewable
+rather than discarding it.
 
 - Generator receives narrow permissions to `git add`, `git commit`, and
   `git push` its own deliverable work **only on that prepared milestone

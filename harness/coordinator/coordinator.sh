@@ -66,6 +66,11 @@ if [ -z "$CLAUDE_BIN" ]; then echo "ERROR: claude not found" >&2; exit 1; fi
 
 RETRY_BOUND="$(grep -oE '\*\*[0-9]+\*\*' "$HARNESS_DIR/coordinator/policy.md" | head -1 | tr -d '*')"
 RETRY_BOUND="${RETRY_BOUND:-3}"
+# Explicit policy switch: automatic retrying is useful for later
+# unattended/cron mode, but is OFF during the current interactive Discord
+# run. Never infer this from where the script happened to be launched.
+AUTO_RETRIES_ENABLED="$(grep -iE 'Automatic retries enabled:' "$HARNESS_DIR/coordinator/policy.md" | head -1 | grep -oiE '\*\*(true|false)\*\*' | tr -d '*' | tr '[:upper:]' '[:lower:]')"
+AUTO_RETRIES_ENABLED="${AUTO_RETRIES_ENABLED:-false}"
 
 GEN_MODEL="opus"
 EVAL_MODEL="sonnet"
@@ -184,8 +189,13 @@ invoke_role() {
     echo "$output"
     return 0
   fi
-  echo "  !! ${role} subprocess failed on attempt 1 -- retrying once" >&2
+  echo "  !! ${role} subprocess failed on attempt 1" >&2
   echo "$output" >&2
+  if [ "$AUTO_RETRIES_ENABLED" != "true" ]; then
+    escalate "${role} subprocess failed for milestone ${milestone_id}, run ${run_id}. Automatic retries are disabled by coordinator/policy.md. Output: $(echo "$output" | tail -20 | tr '\n' ' ')" "$run_id" "$milestone_id"
+    return 1
+  fi
+  echo "  -- automatic retries enabled; retrying ${role} once" >&2
 
   echo "  -- invoking ${role} (model: ${model}, run ${run_id}, milestone ${milestone_id}) [attempt 2 of 2]" >&2
   if output="$(invoke_role_once "$role" "$model" "$run_id" "$context_file")"; then
@@ -264,7 +274,7 @@ escalate() {
 
 CURRENT_SPEC_REF="$(git -C "$HARNESS_DIR" rev-parse HEAD 2>/dev/null || echo unknown)"
 
-echo "== Coordinator starting for team/${TEAM_NAME} (retry bound: ${RETRY_BOUND}, milestones: ${#MILESTONE_IDS[@]}) =="
+echo "== Coordinator starting for team/${TEAM_NAME} (retry bound: ${RETRY_BOUND}, auto retries: ${AUTO_RETRIES_ENABLED}, milestones: ${#MILESTONE_IDS[@]}) =="
 
 # --- Do-nothing short-circuit #1: fully converged (all milestones done
 #     for the current spec_ref) ---
@@ -408,12 +418,17 @@ while [ "$run_id" -le "$MAX_LOOPS" ]; do
     fi
     exit 0
   elif [ "$overall" = "FAIL" ]; then
-    echo "== Milestone ${CURRENT_MILESTONE_ID}, attempt ${run_id}: FAIL -- retrying =="
+    echo "== Milestone ${CURRENT_MILESTONE_ID}, attempt ${run_id}: FAIL =="
     prior_verdict_summary="$(cat "$TMP/verdict-run${run_id}.md")"
+    if [ "$AUTO_RETRIES_ENABLED" != "true" ]; then
+      escalate "Evaluator returned FAIL for milestone ${CURRENT_MILESTONE_ID}, attempt ${run_id}. Automatic retries are disabled by coordinator/policy.md; operator review and an explicit new run are required." "$run_id" "$CURRENT_MILESTONE_ID"
+      exit 1
+    fi
     if [ "$run_id" -ge "$RETRY_BOUND" ]; then
       escalate "Retry bound (${RETRY_BOUND}) exceeded for milestone ${CURRENT_MILESTONE_ID} without a passing verdict." "$run_id" "$CURRENT_MILESTONE_ID"
       exit 1
     fi
+    echo "== Automatic retries enabled; retrying milestone ${CURRENT_MILESTONE_ID} =="
     run_id=$((run_id + 1))
   else
     escalate "Evaluator verdict for milestone ${CURRENT_MILESTONE_ID}, attempt ${run_id} did not contain a parseable overall: PASS|FAIL line -- treating as untestable." "$run_id" "$CURRENT_MILESTONE_ID"

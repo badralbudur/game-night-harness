@@ -1,8 +1,23 @@
 # Coordinator Policy (Game Night v1)
 
-## Retry bound
+## Retry policy
 
-Maximum retries before escalating to the user: **3**.
+- **Automatic retries enabled:** **false** (current interactive/manual-run
+  mode).
+- **Maximum automatic retries when enabled:** **3**.
+
+The retry mechanism remains part of the harness because unattended mode
+(e.g. cron) may need bounded autonomous convergence. But while a human is
+watching runs from Discord and actively shaping the harness, automatic
+retries are deliberately disabled: a Generator/Evaluator failure or a
+role/subprocess failure stops after its first attempt, writes the durable
+escalation record, and returns control to the operator. The operator can
+review the evidence, adjust the harness/spec/process if needed, then
+explicitly invoke a fresh coordinator run.
+
+When enabling unattended operation later, change `Automatic retries
+enabled` to **true** and retain the bounded retry count above; do not
+silently change this behavior in coordinator code.
 
 ## Escalation trigger
 

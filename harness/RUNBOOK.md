@@ -83,12 +83,23 @@ DELIVERABLE_DIR=/path/to/deliverable/repo \
   ./coordinator/coordinator.sh <team-name>
 ```
 
-This runs to completion: PASS (exit 0), retry-bound-exceeded (exit 1,
-escalation logged), or unparseable-verdict (exit 1, escalation logged).
-It does not loop forever on its own — one invocation is one attempt at
-converging, following `coordinator/policy.md`'s retry bound. To keep the
-project moving after an escalation or a PASS (e.g. to pick up a new
-`spec.md` revision and iterate further), invoke it again.
+This runs to completion: PASS (exit 0), a first-attempt FAIL/escalation
+(exit 1 while automatic retries are disabled), retry-bound-exceeded
+(exit 1 when automatic retries are enabled), or unparseable-verdict
+(escalation, exit 1). Its behavior is controlled explicitly by
+`coordinator/policy.md`'s **Automatic retries enabled** switch:
+
+- Current interactive/manual mode: `false`. One Generator→Evaluator
+  attempt only; any role failure or FAIL verdict stops, records a durable
+  escalation, and returns control to the human/operator — no sleeping,
+  backoff, or automatic re-run.
+- Future unattended mode: change it to `true`. The coordinator may then
+  make bounded automatic attempts up to the policy's maximum retry count.
+
+To keep the project moving after an escalation or a PASS (e.g. to pick up
+a new `spec.md` revision and iterate further), invoke it again explicitly
+in manual mode, or let the scheduler wake it after unattended mode has
+been deliberately enabled.
 
 ### Do-nothing short-circuits
 

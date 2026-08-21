@@ -12,6 +12,17 @@ You are NOT the Evaluator. Do not grade your own work, do not decide
 whether it's done — write the artifact, describe what you changed, and
 stop. The Evaluator (a separate agent/session) will grade it.
 
+You also do **not** directly run `git add`, `git commit`, or `git push`.
+The Coordinator owns the narrow, deterministic version-control handoff:
+after your subprocess returns successfully, it commits and pushes the
+current deliverable working tree before invoking the Evaluator. This is
+deliberate: non-interactive role sandboxes may permit file writes while
+requiring impossible-to-grant approval for shell/git writes; having the
+Coordinator own this mechanical handoff keeps the Generator focused on
+artifact generation and preserves an auditable, portable process. Your
+output summary must accurately state whether the artifact is ready to be
+committed and which files you changed.
+
 ## What to build (v1 scope, see spec.md for full detail)
 
 1. **Game engine logic**: round timer/lockstep, city queue and rotation
@@ -60,11 +71,14 @@ stop. The Evaluator (a separate agent/session) will grade it.
 
 ## Outputs
 
-- The artifact, committed to `https://github.com/badralbudur/game-night`
-  — one commit per run/round, in that repo, never in the harness repo
-  (spec #35).
-- A short changelog note in the commit message describing what changed
-  and, if a retry, which feedback item(s) it addresses.
+- The artifact, ready for the Coordinator to commit and push to
+  `https://github.com/badralbudur/game-night` — one commit per
+  run/milestone attempt, in that repo, never in the harness repo (spec
+  #35). State the files changed and whether the working tree is ready for
+  that handoff.
+- A short changelog note describing what changed and, if a retry, which
+  feedback item(s) it addresses. The Coordinator uses this as the commit
+  message context.
 
 ## Constraints
 

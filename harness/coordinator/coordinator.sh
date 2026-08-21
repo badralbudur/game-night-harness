@@ -139,7 +139,7 @@ invoke_role_once() {
       --model "$model" \
       --add-dir "$DELIVERABLE_DIR" \
       --permission-mode acceptEdits \
-      --append-system-prompt "You are the ${role} role for the Game Night v1 harness run, working on ONE milestone at a time (see coordinator/milestones.md philosophy below). Follow your role instructions and spec exactly, but restrict your actual work this run to the current milestone's scope -- do not attempt other milestones' work even if you see how to. Work only inside $DELIVERABLE_DIR (the deliverable repo, separate from the harness repo). Commit and push your own changes to this repo's git remote when you're done, with a clear commit message noting which milestone this is. Do not modify the harness repo." \
+      --append-system-prompt "You are the ${role} role for the Game Night v1 harness run, working on ONE milestone at a time (see coordinator/milestones.md philosophy below). Follow your role instructions and spec exactly, but restrict your actual work this run to the current milestone's scope -- do not attempt other milestones' work even if you see how to. Work only inside $DELIVERABLE_DIR (the deliverable repo, separate from the harness repo). Do not modify the harness repo. The Coordinator, not you, owns the deterministic git add/commit/push handoff after a successful Generator run; do not try to run git write commands yourself." \
       "$(cat <<PROMPT
 Your role instructions (roles/${role}.md):
 ---
@@ -195,6 +195,39 @@ invoke_role() {
   echo "  !! ${role} subprocess failed on attempt 2 -- escalating" >&2
   escalate "${role} subprocess failed twice in a row for milestone ${milestone_id}, run ${run_id}. Last output: $(echo "$output" | tail -20 | tr '\n' ' ')" "$run_id" "$milestone_id"
   return 1
+}
+
+# coordinator_commit_deliverable <milestone_id> <attempt> <generator-summary>
+#
+# The coordinator owns this deliberately narrow mechanical handoff instead
+# of asking a non-interactive Generator subagent to execute git writes.
+# This preserves role separation while ensuring requirement #35 (a
+# deliverable commit per run/milestone attempt) is reliably enforceable.
+coordinator_commit_deliverable() {
+  local milestone_id="$1" attempt="$2" generator_summary="$3"
+  local summary_line
+  summary_line="$(printf '%s\n' "$generator_summary" | grep -v '^$' | head -1 | cut -c1-160)"
+  summary_line="${summary_line:-Generator artifact handoff}"
+
+  if [ -z "$(git -C "$DELIVERABLE_DIR" status --porcelain)" ]; then
+    echo "  -- Coordinator git handoff: working tree clean; no commit needed" >&2
+    return 0
+  fi
+
+  echo "  -- Coordinator git handoff: committing deliverable changes for ${milestone_id}, attempt ${attempt}" >&2
+  if ! git -C "$DELIVERABLE_DIR" add -A; then
+    escalate "Coordinator failed to stage deliverable changes for milestone ${milestone_id}, attempt ${attempt}." "$attempt" "$milestone_id"
+    return 1
+  fi
+  if ! git -C "$DELIVERABLE_DIR" commit -m "feat(${milestone_id,,}): generator artifact handoff (attempt ${attempt})" -m "$summary_line"; then
+    escalate "Coordinator failed to commit staged deliverable changes for milestone ${milestone_id}, attempt ${attempt}." "$attempt" "$milestone_id"
+    return 1
+  fi
+  if ! git -C "$DELIVERABLE_DIR" push origin HEAD; then
+    escalate "Coordinator committed but failed to push deliverable changes for milestone ${milestone_id}, attempt ${attempt}." "$attempt" "$milestone_id"
+    return 1
+  fi
+  return 0
 }
 
 escalate() {
@@ -310,6 +343,15 @@ while [ "$run_id" -le "$MAX_LOOPS" ]; do
   fi
   echo "$gen_output" > "$TMP/gen-output-${run_id}.md"
   run_fulcra file upload "$TMP/gen-output-${run_id}.md" "${TEAM_PREFIX}/member/generator/archive/${CURRENT_MILESTONE_ID}-run${run_id}-output.md" >/dev/null 2>&1 || true
+
+  # Mechanical handoff: commit/push the Generator's artifact BEFORE the
+  # separate Evaluator reads it. This is Coordinator-owned deliberately:
+  # non-interactive role sandboxes may permit file edits but deny git
+  # shell writes; requiring the Generator to commit caused three false
+  # M1 failures despite correct content. See coordinator_commit_deliverable.
+  if ! coordinator_commit_deliverable "$CURRENT_MILESTONE_ID" "$run_id" "$gen_output"; then
+    exit 1  # coordinator_commit_deliverable already escalated
+  fi
 
   {
     echo "You are grading milestone ${CURRENT_MILESTONE_ID}: ${CURRENT_MILESTONE_TITLE}."

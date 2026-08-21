@@ -27,8 +27,19 @@ execution history.
   advisory role) without touching the coordinator's logic.
 - `roles/*.md` — one file per active role, its operating instructions.
 - `coordinator/coordinator.sh` (or `.py`) — drives the loop: reads
-  `roles/manifest.md`, sends directives, waits for artifacts/verdicts,
-  applies retry/escalation policy from `coordinator/policy.md`.
+  `roles/manifest.md`, `coordinator/milestones.md`, and workspace
+  progress state to determine the current milestone, sends directives,
+  waits for artifacts/verdicts, applies retry/escalation policy from
+  `coordinator/policy.md`.
+- `coordinator/milestones.md` — breaks `spec.md` into an ordered
+  sequence of small, independently buildable-and-gradeable increments.
+  The coordinator scopes each Generator/Evaluator run to exactly ONE
+  milestone at a time — attempting the full spec in one run is too large
+  a unit of work to reliably complete (confirmed empirically: an
+  early full-spec attempt produced a substantial partial build but hit
+  a provider usage limit before finishing or committing). The Generator
+  still reads the full `spec.md` every run so it never violates a
+  later-milestone invariant, but its concrete task is milestone-scoped.
 - `coordinator/policy.md` — retry bound, escalation trigger, timeout
   behavior. Does **not** encode how evaluation works — that's up to each
   evaluator role — only how the loop reacts to a verdict.

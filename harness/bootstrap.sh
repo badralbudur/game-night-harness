@@ -108,6 +108,9 @@ done
 if [ -f "$HARNESS_DIR/coordinator/policy.md" ]; then
   run_fulcra file upload "$HARNESS_DIR/coordinator/policy.md" "${TEAM_PREFIX}/knowledge/harness/coordinator/policy.md"
 fi
+if [ -f "$HARNESS_DIR/coordinator/milestones.md" ]; then
+  run_fulcra file upload "$HARNESS_DIR/coordinator/milestones.md" "${TEAM_PREFIX}/knowledge/harness/coordinator/milestones.md"
+fi
 
 # --- 4. Provision roles generically from roles/manifest.md -----------------
 # Manifest is a markdown table: | Role name | File | Responsibility | Inbox address |

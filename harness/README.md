@@ -10,6 +10,9 @@ execution history.
   prerequisites, on-demand vs. unattended/cron execution, how to adapt
   the coordinator to a different model/agent provider than the default.
   Read this first if you're picking up a ported copy cold.
+- `HARNESS_GOVERNANCE.md` — explicit authority/cadence for evolving the
+  harness itself: user-only spec/decision changes vs. automatically
+  mutable knowledge, milestones, and evidence-backed process fixes.
 - `spec.md` — the current, synthesized, structured specification: requirements,
   generation rules, evaluation criteria. Immutable *during* a run; updated
   only between runs, deliberately, as the mechanism for changing target

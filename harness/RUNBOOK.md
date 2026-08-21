@@ -124,6 +124,37 @@ Both checks only compare against the *current* spec version, so editing
 `spec.md` and committing is the standard way to signal "there's new work
 to do" to any future invocation, attended or not.
 
+## Milestone branches and review PRs
+
+Before each milestone run, the Coordinator creates (or resumes) a branch
+named `milestone/<id>-<slug>` in the **deliverable** repo and opens one
+private PR from that branch to `main`. The branch/PR persists across
+attempts: a FAIL or escalation leaves its committed work visible and
+reviewable rather than discarding it.
+
+- Generator receives narrow permissions to `git add`, `git commit`, and
+  `git push` its own deliverable work **only on that prepared milestone
+  branch**. It may not create branches, merge PRs, or write `main`.
+- Evaluator grades the committed milestone branch state, not an
+  uncommitted working tree.
+- Coordinator merges that PR only after an `overall: PASS` verdict, then
+  updates `milestone-progress.md` and moves to the next milestone.
+- If merge itself fails, Coordinator escalates and does not advance the
+  milestone pointer; an evaluation pass is not enough until the approved
+  work is actually in `main`.
+
+This requires authenticated `gh`; `doctor.sh` checks it.
+
+## Harness evolution governance
+
+Read `HARNESS_GOVERNANCE.md` before making process changes. In short:
+`spec.md` and `decisions.md` only change after an explicit user decision;
+knowledge accumulation, evidence-backed milestone decomposition, and
+concrete harness-process fixes may be made automatically after every
+terminal coordinator outcome by the separate Harness Maintainer role.
+Every such change must be committed/pushed/reported, never silently
+applied.
+
 ## Unattended execution (cron/scheduled)
 
 The coordinator does not daemonize or schedule itself — that's the

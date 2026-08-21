@@ -137,6 +137,27 @@ invoke_role_once() {
   local role_instructions="$HARNESS_DIR/roles/${role}.md"
   local spec_file="$HARNESS_DIR/spec.md"
   local out_file="$TMP/${role}-run${run_id}-attempt-output.md"
+  local -a role_permission_args=()
+  local role_git_instruction
+
+  if [ "$role" = "generator" ]; then
+    # Verified in an isolated real Claude session: acceptEdits plus this
+    # narrow allowlist permits Generator-owned stage/commit/push without
+    # granting bypassPermissions or unrestricted Bash authority.
+    role_permission_args=(
+      --allowedTools
+      'Bash(git add *)'
+      'Bash(git commit *)'
+      'Bash(git push *)'
+      'Bash(git status *)'
+      'Bash(git diff *)'
+      'Bash(git log *)'
+      'Bash(git rev-parse *)'
+    )
+    role_git_instruction="You are on Coordinator-created branch ${MILESTONE_BRANCH}. You must commit and push your own milestone artifact on that branch; do not create branches, merge PRs, or modify main."
+  else
+    role_git_instruction="You are read/test-only. Do not stage, commit, push, create branches, or merge PRs."
+  fi
 
   (
     cd "$DELIVERABLE_DIR"
@@ -144,7 +165,9 @@ invoke_role_once() {
       --model "$model" \
       --add-dir "$DELIVERABLE_DIR" \
       --permission-mode acceptEdits \
-      --append-system-prompt "You are the ${role} role for the Game Night v1 harness run, working on ONE milestone at a time (see coordinator/milestones.md philosophy below). Follow your role instructions and spec exactly, but restrict your actual work this run to the current milestone's scope -- do not attempt other milestones' work even if you see how to. Work only inside $DELIVERABLE_DIR (the deliverable repo, separate from the harness repo). Do not modify the harness repo. The Coordinator, not you, owns the deterministic git add/commit/push handoff after a successful Generator run; do not try to run git write commands yourself." \
+      --append-system-prompt "You are the ${role} role for the Game Night v1 harness run, working on ONE milestone at a time (see coordinator/milestones.md philosophy below). Follow your role instructions and spec exactly, but restrict your actual work this run to the current milestone's scope -- do not attempt other milestones' work even if you see how to. Work only inside $DELIVERABLE_DIR (the deliverable repo, separate from the harness repo). Do not modify the harness repo. ${role_git_instruction}" \
+      "${role_permission_args[@]}" \
+      -- \
       "$(cat <<PROMPT
 Your role instructions (roles/${role}.md):
 ---
@@ -207,36 +230,75 @@ invoke_role() {
   return 1
 }
 
-# coordinator_commit_deliverable <milestone_id> <attempt> <generator-summary>
+# prepare_milestone_branch <milestone-id> <milestone-title>
 #
-# The coordinator owns this deliberately narrow mechanical handoff instead
-# of asking a non-interactive Generator subagent to execute git writes.
-# This preserves role separation while ensuring requirement #35 (a
-# deliverable commit per run/milestone attempt) is reliably enforceable.
-coordinator_commit_deliverable() {
-  local milestone_id="$1" attempt="$2" generator_summary="$3"
-  local summary_line
-  summary_line="$(printf '%s\n' "$generator_summary" | grep -v '^$' | head -1 | cut -c1-160)"
-  summary_line="${summary_line:-Generator artifact handoff}"
+# Coordinator owns branch and PR lifecycle. Generator owns commits/pushes
+# ON that branch; Evaluator grades branch state; Coordinator merges only
+# after PASS. This makes failed/escalated milestone work visible in GitHub
+# without letting unapproved work reach main.
+prepare_milestone_branch() {
+  local milestone_id="$1" milestone_title="$2"
+  local slug
+  slug="$(printf '%s' "$milestone_title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-|-$//g')"
+  MILESTONE_BRANCH="milestone/${milestone_id,,}-${slug}"
 
-  if [ -z "$(git -C "$DELIVERABLE_DIR" status --porcelain)" ]; then
-    echo "  -- Coordinator git handoff: working tree clean; no commit needed" >&2
-    return 0
+  if [ -n "$(git -C "$DELIVERABLE_DIR" status --porcelain)" ]; then
+    escalate "Deliverable working tree is dirty before preparing ${milestone_id}; refusing to switch branches and risk mixing work." 0 "$milestone_id"
+    return 1
+  fi
+  if ! git -C "$DELIVERABLE_DIR" fetch origin; then
+    escalate "Coordinator could not fetch deliverable remote before preparing ${milestone_id}." 0 "$milestone_id"
+    return 1
+  fi
+  if git -C "$DELIVERABLE_DIR" show-ref --verify --quiet "refs/remotes/origin/${MILESTONE_BRANCH}"; then
+    git -C "$DELIVERABLE_DIR" checkout -q -B "$MILESTONE_BRANCH" "origin/${MILESTONE_BRANCH}" || {
+      escalate "Coordinator could not check out existing milestone branch ${MILESTONE_BRANCH}." 0 "$milestone_id"; return 1; }
+  else
+    git -C "$DELIVERABLE_DIR" checkout -q main && git -C "$DELIVERABLE_DIR" pull --ff-only origin main && git -C "$DELIVERABLE_DIR" checkout -q -b "$MILESTONE_BRANCH" || {
+      escalate "Coordinator could not create milestone branch ${MILESTONE_BRANCH} from main." 0 "$milestone_id"; return 1; }
+    git -C "$DELIVERABLE_DIR" push -u origin "$MILESTONE_BRANCH" || {
+      escalate "Coordinator created but could not push milestone branch ${MILESTONE_BRANCH}." 0 "$milestone_id"; return 1; }
   fi
 
-  echo "  -- Coordinator git handoff: committing deliverable changes for ${milestone_id}, attempt ${attempt}" >&2
-  if ! git -C "$DELIVERABLE_DIR" add -A; then
-    escalate "Coordinator failed to stage deliverable changes for milestone ${milestone_id}, attempt ${attempt}." "$attempt" "$milestone_id"
+  # Create one reviewable PR per milestone, but retain it across Generator
+  # attempts/FAILs so the user sees the evolving branch rather than a
+  # succession of throwaway PRs.
+  MILESTONE_PR_URL="$(gh pr list --repo badralbudur/game-night --head "$MILESTONE_BRANCH" --base main --state open --json url --jq '.[0].url' 2>/dev/null || true)"
+  if [ -z "$MILESTONE_PR_URL" ]; then
+    MILESTONE_PR_URL="$(gh pr create --repo badralbudur/game-night --base main --head "$MILESTONE_BRANCH" --title "feat(${milestone_id,,}): ${milestone_title}" --body "Milestone ${milestone_id} for Game Night v1.\n\nThis PR is created by the harness coordinator before Generator work begins. Generator pushes each attempt here; Evaluator independently grades the committed branch. The coordinator merges only after an explicit PASS verdict." 2>/dev/null)" || {
+      escalate "Coordinator created branch ${MILESTONE_BRANCH} but could not create its GitHub PR." 0 "$milestone_id"; return 1; }
+  fi
+  echo "== Milestone branch: ${MILESTONE_BRANCH}; PR: ${MILESTONE_PR_URL} ==" >&2
+  return 0
+}
+
+# verify_generator_handoff
+# Generator owns commit/push. Before Evaluator runs, Coordinator checks
+# that there is no dirty work tree and that the branch exists on origin;
+# otherwise it escalates instead of grading an uncommitted artifact.
+verify_generator_handoff() {
+  if [ -n "$(git -C "$DELIVERABLE_DIR" status --porcelain)" ]; then
+    escalate "Generator returned with uncommitted deliverable changes on ${MILESTONE_BRANCH}; Generator must commit/push its own milestone work before evaluation." "$run_id" "$CURRENT_MILESTONE_ID"
     return 1
   fi
-  if ! git -C "$DELIVERABLE_DIR" commit -m "feat(${milestone_id,,}): generator artifact handoff (attempt ${attempt})" -m "$summary_line"; then
-    escalate "Coordinator failed to commit staged deliverable changes for milestone ${milestone_id}, attempt ${attempt}." "$attempt" "$milestone_id"
+  if ! git -C "$DELIVERABLE_DIR" ls-remote --exit-code origin "refs/heads/${MILESTONE_BRANCH}" >/dev/null 2>&1; then
+    escalate "Generator branch ${MILESTONE_BRANCH} was not found on origin after Generator returned; cannot evaluate a reviewable pushed artifact." "$run_id" "$CURRENT_MILESTONE_ID"
     return 1
   fi
-  if ! git -C "$DELIVERABLE_DIR" push origin HEAD; then
-    escalate "Coordinator committed but failed to push deliverable changes for milestone ${milestone_id}, attempt ${attempt}." "$attempt" "$milestone_id"
+  return 0
+}
+
+# coordinator_merge_milestone_pr
+# Called only after Evaluator PASS. A merge failure is a durable
+# infrastructure escalation; don't advance the milestone pointer until
+# main actually contains the approved artifact.
+coordinator_merge_milestone_pr() {
+  if ! gh pr merge "$MILESTONE_PR_URL" --repo badralbudur/game-night --merge --delete-branch; then
+    escalate "Evaluator passed ${CURRENT_MILESTONE_ID}, but Coordinator could not merge approved PR ${MILESTONE_PR_URL} into main." "$run_id" "$CURRENT_MILESTONE_ID"
     return 1
   fi
+  git -C "$DELIVERABLE_DIR" checkout -q main && git -C "$DELIVERABLE_DIR" pull --ff-only origin main || {
+    escalate "Approved PR ${MILESTONE_PR_URL} merged, but Coordinator could not refresh local main." "$run_id" "$CURRENT_MILESTONE_ID"; return 1; }
   return 0
 }
 
@@ -322,6 +384,13 @@ if run_fulcra file download "${TEAM_PREFIX}/escalation/.latest.md" "$LATEST_ESCA
   fi
 fi
 
+# Branch/PR setup is deliberately after the cheap do-nothing/escalation
+# checks, so a resolved milestone doesn't create needless branches and an
+# unresolved blocker doesn't mutate repository state.
+if ! prepare_milestone_branch "$CURRENT_MILESTONE_ID" "$CURRENT_MILESTONE_TITLE"; then
+  exit 1
+fi
+
 milestone_body="$(milestone_section "$CURRENT_MILESTONE_ID")"
 
 run_id=1
@@ -354,13 +423,11 @@ while [ "$run_id" -le "$MAX_LOOPS" ]; do
   echo "$gen_output" > "$TMP/gen-output-${run_id}.md"
   run_fulcra file upload "$TMP/gen-output-${run_id}.md" "${TEAM_PREFIX}/member/generator/archive/${CURRENT_MILESTONE_ID}-run${run_id}-output.md" >/dev/null 2>&1 || true
 
-  # Mechanical handoff: commit/push the Generator's artifact BEFORE the
-  # separate Evaluator reads it. This is Coordinator-owned deliberately:
-  # non-interactive role sandboxes may permit file edits but deny git
-  # shell writes; requiring the Generator to commit caused three false
-  # M1 failures despite correct content. See coordinator_commit_deliverable.
-  if ! coordinator_commit_deliverable "$CURRENT_MILESTONE_ID" "$run_id" "$gen_output"; then
-    exit 1  # coordinator_commit_deliverable already escalated
+  # Generator owns the narrow commit/push handoff on the Coordinator-
+  # prepared milestone branch. Confirm that it actually completed before
+  # a separate Evaluator can grade the branch state.
+  if ! verify_generator_handoff; then
+    exit 1  # verify_generator_handoff already escalated
   fi
 
   {
@@ -392,6 +459,10 @@ while [ "$run_id" -le "$MAX_LOOPS" ]; do
 
   if [ "$overall" = "PASS" ]; then
     echo "== Milestone ${CURRENT_MILESTONE_ID}: PASS (attempt ${run_id}) ==" >&2
+    if ! coordinator_merge_milestone_pr; then
+      exit 1  # merge function already escalated; don't advance milestone
+    fi
+    echo "== Approved milestone PR merged: ${MILESTONE_PR_URL} ==" >&2
     new_completed="${COMPLETED_MILESTONES:+$COMPLETED_MILESTONES,}${CURRENT_MILESTONE_ID}"
     next_index=$((CURRENT_MILESTONE_INDEX + 1))
     {

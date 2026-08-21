@@ -25,6 +25,7 @@ echo "== Harness doctor: ${HARNESS_DIR} =="
 check "uvx is on PATH" bash -c 'command -v uvx'
 check "fulcra-api auth is valid (user-info)" bash -c 'uvx fulcra-api user-info'
 check "claude CLI is on PATH (default role runner -- see RUNBOOK.md if using a different provider)" bash -c 'command -v claude'
+check "gh CLI is authenticated (required for milestone PR lifecycle)" bash -c 'gh auth status'
 check "git identity is configured" bash -c 'git config user.name && git config user.email'
 check "roles/manifest.md exists" test -f "$HARNESS_DIR/roles/manifest.md"
 check "spec.md exists and has a filled-in Goal section" bash -c \

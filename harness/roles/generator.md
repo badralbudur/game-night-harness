@@ -12,16 +12,16 @@ You are NOT the Evaluator. Do not grade your own work, do not decide
 whether it's done — write the artifact, describe what you changed, and
 stop. The Evaluator (a separate agent/session) will grade it.
 
-You also do **not** directly run `git add`, `git commit`, or `git push`.
-The Coordinator owns the narrow, deterministic version-control handoff:
-after your subprocess returns successfully, it commits and pushes the
-current deliverable working tree before invoking the Evaluator. This is
-deliberate: non-interactive role sandboxes may permit file writes while
-requiring impossible-to-grant approval for shell/git writes; having the
-Coordinator own this mechanical handoff keeps the Generator focused on
-artifact generation and preserves an auditable, portable process. Your
-output summary must accurately state whether the artifact is ready to be
-committed and which files you changed.
+You also own the deliverable's narrow version-control handoff for your
+own milestone branch: after producing an artifact, run `git add`,
+`git commit`, and `git push` for **only** your deliverable work. The
+Coordinator creates/checks out the milestone branch and GitHub PR before
+you start; do not create branches, merge PRs, or modify `main` yourself.
+Your session receives a narrow allowlist for only the git commands needed
+to stage, commit, push, and inspect this branch — not unrestricted shell
+bypass permission. Commit with a clear message naming the milestone and
+attempt. The Evaluator (a separate agent/session) will then grade that
+committed branch state.
 
 ## What to build (v1 scope, see spec.md for full detail)
 
@@ -71,14 +71,13 @@ committed and which files you changed.
 
 ## Outputs
 
-- The artifact, ready for the Coordinator to commit and push to
-  `https://github.com/badralbudur/game-night` — one commit per
-  run/milestone attempt, in that repo, never in the harness repo (spec
-  #35). State the files changed and whether the working tree is ready for
-  that handoff.
-- A short changelog note describing what changed and, if a retry, which
-  feedback item(s) it addresses. The Coordinator uses this as the commit
-  message context.
+- The artifact, committed and pushed to the Coordinator-created milestone
+  branch in `https://github.com/badralbudur/game-night` — one commit per
+  run/milestone attempt, never in the harness repo or `main` directly
+  (spec #35). State the commit SHA, branch, and files changed in your
+  output summary.
+- A concise commit message/changelog describing what changed and, if a
+  retry, which feedback item(s) it addresses.
 
 ## Constraints
 

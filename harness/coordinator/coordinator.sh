@@ -302,6 +302,35 @@ coordinator_merge_milestone_pr() {
   return 0
 }
 
+write_status_summary() {
+  # write_status_summary <outcome> <where-we-are> <where-were-going> <next-bearing>
+  # A compact, durable status checkpoint after EVERY terminal harness
+  # outcome. Dashboard support reads this rather than trying to infer a
+  # human narrative from raw inboxes/verdicts.
+  local outcome="$1" where="$2" going="$3" next="$4"
+  {
+    echo "---"
+    echo "type: Harness Status Summary"
+    echo "title: Where we are / where we're going"
+    echo "---"
+    echo
+    echo "# Harness checkpoint"
+    echo "- **Outcome:** ${outcome}"
+    echo "- **Milestone:** ${CURRENT_MILESTONE_ID:-unknown}"
+    echo "- **Updated:** $(now_iso)"
+    echo
+    echo "## Where we are"
+    echo "$where"
+    echo
+    echo "## Where we're going"
+    echo "$going"
+    echo
+    echo "## Next bearing"
+    echo "$next"
+  } > "$TMP/status-summary.md"
+  run_fulcra file upload "$TMP/status-summary.md" "${TEAM_PREFIX}/status-summary.md" >/dev/null 2>&1 || true
+}
+
 escalate() {
   local reason="$1" run_id="$2" milestone_id="${3:-unknown}"
   local ts fname
@@ -330,6 +359,7 @@ escalate() {
     echo "timestamp: $(now_iso)"
   } > "$TMP/latest-escalation.md"
   run_fulcra file upload "$TMP/latest-escalation.md" "${TEAM_PREFIX}/escalation/.latest.md"
+  write_status_summary "ESCALATED" "${milestone_id} stopped without an approved result: ${reason}" "Resolve the recorded blocker or adjust the harness/process; do not silently retry while manual mode disables automatic retries." "Review ${TEAM_PREFIX}/escalation/${fname}, make the necessary evidence-backed change, then explicitly start a new coordinator run."
   echo "== ESCALATION (milestone ${milestone_id}, run ${run_id}): ${reason} ==" >&2
   echo "Logged durably to ${TEAM_PREFIX}/escalation/${fname}" >&2
 }
@@ -484,8 +514,10 @@ while [ "$run_id" -le "$MAX_LOOPS" ]; do
         echo "timestamp: $(now_iso)"
       } > "$TMP/converged.md"
       run_fulcra file upload "$TMP/converged.md" "${TEAM_PREFIX}/converged.md"
+      write_status_summary "PASS — ALL MILESTONES" "${CURRENT_MILESTONE_ID} passed independent evaluation and its approved PR merged into main; all planned milestones are complete." "The harness has converged on the current spec version. Further work requires a user-approved spec or milestone change." "Review the full integration evidence and decide whether to begin real-player testing or revise the spec."
     else
       echo "== Next milestone (${MILESTONE_IDS[$next_index]}) will be attempted on the next coordinator invocation. =="
+      write_status_summary "PASS" "${CURRENT_MILESTONE_ID} passed independent evaluation and its approved PR merged into main." "The harness now moves to ${MILESTONE_IDS[$next_index]}: ${MILESTONE_TITLES[$next_index]}." "Create/resume the ${MILESTONE_IDS[$next_index]} review branch and run one explicit manual Generator → Evaluator attempt."
     fi
     exit 0
   elif [ "$overall" = "FAIL" ]; then

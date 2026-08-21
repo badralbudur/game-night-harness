@@ -71,6 +71,12 @@ RETRY_BOUND="${RETRY_BOUND:-3}"
 # run. Never infer this from where the script happened to be launched.
 AUTO_RETRIES_ENABLED="$(grep -iE 'Automatic retries enabled:' "$HARNESS_DIR/coordinator/policy.md" | head -1 | grep -oiE '\*\*(true|false)\*\*' | tr -d '*' | tr '[:upper:]' '[:lower:]')"
 AUTO_RETRIES_ENABLED="${AUTO_RETRIES_ENABLED:-false}"
+IDLE_TIMEOUT_MINUTES="$(grep -iE 'Maximum idle time:' "$HARNESS_DIR/coordinator/policy.md" | head -1 | grep -oE '[0-9]+' | head -1)"
+IDLE_TIMEOUT_MINUTES="${IDLE_TIMEOUT_MINUTES:-15}"
+HARD_TIMEOUT_MINUTES="$(grep -iE 'Hard maximum role wall clock:' "$HARNESS_DIR/coordinator/policy.md" | head -1 | grep -oE '[0-9]+' | head -1)"
+HARD_TIMEOUT_MINUTES="${HARD_TIMEOUT_MINUTES:-120}"
+WATCHDOG_POLL_SECONDS="$(grep -iE 'Watchdog poll interval:' "$HARNESS_DIR/coordinator/policy.md" | head -1 | grep -oE '[0-9]+' | head -1)"
+WATCHDOG_POLL_SECONDS="${WATCHDOG_POLL_SECONDS:-30}"
 
 GEN_MODEL="opus"
 EVAL_MODEL="sonnet"
@@ -192,7 +198,48 @@ milestone described above. When done, report a concise summary of what
 you did/found.
 PROMPT
 )"
-  ) > "$out_file" 2>&1
+  ) > "$out_file" 2>&1 &
+  local pid=$!
+  local started_at last_activity now elapsed_total elapsed_idle
+  local activity_marker="$TMP/${role}-run${run_id}-activity.marker"
+  started_at="$(date +%s)"
+  touch "$activity_marker"
+
+  # Watch real role activity rather than merely elapsed time. The role can
+  # legitimately work for a long time; it is stalled only if neither its
+  # stdout nor a non-.git deliverable file changes for the configured idle
+  # window. A separate hard ceiling prevents a wedged process lasting
+  # forever even if it emits meaningless output.
+  while kill -0 "$pid" 2>/dev/null; do
+    if [ "$out_file" -nt "$activity_marker" ] || \
+       find "$DELIVERABLE_DIR" -path "$DELIVERABLE_DIR/.git" -prune -o -type f -newer "$activity_marker" -print -quit | grep -q .; then
+      touch "$activity_marker"
+    fi
+    now="$(date +%s)"
+    last_activity="$(stat -c %Y "$activity_marker")"
+    elapsed_total=$((now - started_at))
+    elapsed_idle=$((now - last_activity))
+    if [ "$elapsed_idle" -ge $((IDLE_TIMEOUT_MINUTES * 60)) ]; then
+      echo "WATCHDOG: ${role} stalled for ${elapsed_idle}s (idle limit: ${IDLE_TIMEOUT_MINUTES}m); terminating." >> "$out_file"
+      kill -TERM "$pid" 2>/dev/null || true
+      sleep 2
+      kill -KILL "$pid" 2>/dev/null || true
+      wait "$pid" 2>/dev/null || true
+      cat "$out_file"
+      return 124
+    fi
+    if [ "$elapsed_total" -ge $((HARD_TIMEOUT_MINUTES * 60)) ]; then
+      echo "WATCHDOG: ${role} exceeded hard wall clock (${HARD_TIMEOUT_MINUTES}m); terminating." >> "$out_file"
+      kill -TERM "$pid" 2>/dev/null || true
+      sleep 2
+      kill -KILL "$pid" 2>/dev/null || true
+      wait "$pid" 2>/dev/null || true
+      cat "$out_file"
+      return 125
+    fi
+    sleep "$WATCHDOG_POLL_SECONDS"
+  done
+  wait "$pid"
   local rc=$?
   cat "$out_file"
   return "$rc"

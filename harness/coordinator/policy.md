@@ -37,23 +37,28 @@ On escalation:
    also notify the user directly there.
 3. Halt the loop. Do not continue attempting retries past the bound.
 
-## Timeout behavior
+## Timeout / liveness behavior
 
-_Proposed default, not yet confirmed by user — flag as open in the first
-escalation log entry if this hasn't been explicitly approved by the time
-it's first needed:_
+A role is supervised by an **activity-aware watchdog**, not a naïve
+wall-clock-only timeout. Observable activity means a changed deliverable
+file (excluding `.git/`) or fresh role subprocess output.
 
-The coordinator invokes each role (Generator, Evaluator) as a synchronous
-subprocess (`claude -p ...`) per run, so "timeout" here means "the
-subprocess call itself hangs or errors," not an async wait on a human
-inbox (this is the harness loop's own Generator↔Evaluator timing, not the
-in-game 24h player round window, which is a separate, already-decided
-game-mechanic parameter in `config.json`).
+- **Maximum idle time:** **15 minutes** with no observable activity.
+- **Hard maximum role wall clock:** **120 minutes** (two hours).
+- **Watchdog poll interval:** **30 seconds**.
 
-- Default subprocess timeout: 10 minutes per role invocation.
-- On timeout: retry the same role invocation once. If it times out again,
-  treat this as an escalation trigger (role failed to respond).
+On either a 15-minute inactivity stall or the two-hour hard ceiling, the
+Coordinator terminates the role subprocess, writes a durable escalation
+that distinguishes `stalled` from `hard-wall-clock-exceeded`, and halts
+in the current manual mode (automatic retries are disabled). If automatic
+retries are later enabled, this failure participates in the same bounded
+retry policy as other role subprocess failures.
 
+The two-hour ceiling is deliberately much longer than ordinary work, but
+prevents a wedged process from appearing to run forever. The 15-minute
+idle threshold prevents it from killing a genuinely active longer build
+(e.g. M2), as long as that build is still producing observable artifacts
+or output.
 ## What does NOT count against the retry bound
 
 - Any future dashboard-support role's failure to render a view does not

@@ -94,3 +94,18 @@ appear clear.
 review the existing diff, commit and push it on the milestone branch, and let
 a separate Evaluator grade that committed state. The Harness Maintainer must
 not commit or otherwise patch the deliverable to clear this escalation.
+
+## Finding 6: a terminal scheduled outcome needs a non-silent origin report (RESOLVED)
+
+**Discovered:** scheduler-owned execution `8cf571ba4c54461db4d5615ae136fad6`
+completed at 2026-08-22T20:49:04Z. Its workspace status checkpoint and the
+dashboard data both refreshed at 2026-08-22T20:48:14Z, but the job's own
+persisted response was `[SILENT]`. The Hermes ledger showed no delivery error,
+but `[SILENT]` intentionally suppresses the origin message, so that is not
+independent delivery evidence for this terminal coordinator outcome.
+
+**Fix:** the weekend coordinator cron prompt now explicitly requires a concise,
+non-silent origin report after every terminal coordinator invocation, including
+a correctly blocked short-circuit. It may use `[SILENT]` only when no
+coordinator invocation occurred. Durable workspace and dashboard state remain
+the source of truth; the report is an independently observable notification.

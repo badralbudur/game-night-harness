@@ -527,8 +527,15 @@ if run_fulcra file download "${TEAM_PREFIX}/escalation/.latest.md" "$LATEST_ESCA
        [ -z "$(git -C "$DELIVERABLE_DIR" status --porcelain)" ]; then
       echo "== Prior dirty-tree safety escalation is resolved by a clean deliverable work tree; resuming ${CURRENT_MILESTONE_ID}. =="
     else
+      # A short-circuit is still a terminal coordinator outcome. Refresh the
+      # durable checkpoint (and optional dashboard hook) so unattended runs
+      # remain observable even while correctly refusing to repeat a known
+      # unresolved escalation. Do not create another escalation entry: the
+      # existing .latest marker is the canonical blocker and retains its
+      # original evidence/timestamp.
+      write_status_summary "ESCALATED — BLOCKED" "${CURRENT_MILESTONE_ID} remains blocked by the open escalation: ${open_reason}" "The coordinator correctly made no destructive changes and will resume only after the recorded blocker is resolved." "Review ${TEAM_PREFIX}/escalation/.latest.md and its referenced escalation evidence, resolve the precondition, then allow the next scheduled coordinator run to resume."
       echo "== There is already an open escalation for spec_ref ${CURRENT_SPEC_REF}, milestone ${CURRENT_MILESTONE_ID}. Not re-attempting automatically. =="
-      echo "See ${TEAM_PREFIX}/escalation/.latest.md for details. Resolve it before the next run."
+      echo "Refreshed durable status and dashboard hook; see ${TEAM_PREFIX}/escalation/.latest.md for details. Resolve it before the next run."
       exit 1
     fi
   fi

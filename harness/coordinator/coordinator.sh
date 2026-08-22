@@ -302,12 +302,7 @@ prepare_milestone_branch() {
   slug="$(printf '%s' "$milestone_title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-|-$//g')"
   MILESTONE_BRANCH="milestone/${milestone_id,,}-${slug}"
 
-  # The declared Python test runner creates bytecode caches. They are
-  # neither Generator artifact changes nor a reason to block a corrective
-  # branch; remove only these known ephemeral runtime artifacts before the
-  # real dirty-tree guard. Do NOT broadly clean untracked files here.
-  find "$DELIVERABLE_DIR" -type d -name '__pycache__' -prune -exec rm -rf {} + 2>/dev/null || true
-  find "$DELIVERABLE_DIR" -type f -name '*.py[co]' -delete 2>/dev/null || true
+  clear_known_test_caches
 
   if [ -n "$(git -C "$DELIVERABLE_DIR" status --porcelain)" ]; then
     escalate "Deliverable working tree is dirty before preparing ${milestone_id}; refusing to switch branches and risk mixing work." 0 "$milestone_id"
@@ -334,6 +329,14 @@ prepare_milestone_branch() {
   MILESTONE_PR_URL=""
   echo "== Milestone branch prepared: ${MILESTONE_BRANCH} ==" >&2
   return 0
+}
+
+# The declared Python test runner creates bytecode caches. They are neither
+# Generator artifacts nor a reason to block a corrective branch. Do not
+# broadly clean untracked files: source changes must always remain visible.
+clear_known_test_caches() {
+  find "$DELIVERABLE_DIR" -type d -name '__pycache__' -prune -exec rm -rf {} + 2>/dev/null || true
+  find "$DELIVERABLE_DIR" -type f -name '*.py[co]' -delete 2>/dev/null || true
 }
 
 ensure_milestone_pr() {
@@ -451,7 +454,15 @@ escalate() {
     echo "timestamp: $(now_iso)"
   } > "$TMP/latest-escalation.md"
   run_fulcra file upload "$TMP/latest-escalation.md" "${TEAM_PREFIX}/escalation/.latest.md"
-  write_status_summary "ESCALATED" "${milestone_id} stopped without an approved result: ${reason}" "Resolve the recorded blocker or adjust the harness/process; do not silently retry while manual mode disables automatic retries." "Review ${TEAM_PREFIX}/escalation/${fname}, make the necessary evidence-backed change, then explicitly start a new coordinator run."
+  local recovery next_bearing
+  if [ "$AUTO_RETRIES_ENABLED" = "true" ]; then
+    recovery="Resolve the recorded blocker or adjust the harness/process. Automatic role/verdict retries are enabled, but this safety escalation remains blocked until its recorded precondition is resolved."
+    next_bearing="Review ${TEAM_PREFIX}/escalation/${fname}, make the necessary evidence-backed change, then allow the next scheduled coordinator run to resume."
+  else
+    recovery="Resolve the recorded blocker or adjust the harness/process; do not silently retry while manual mode disables automatic retries."
+    next_bearing="Review ${TEAM_PREFIX}/escalation/${fname}, make the necessary evidence-backed change, then explicitly start a new coordinator run."
+  fi
+  write_status_summary "ESCALATED" "${milestone_id} stopped without an approved result: ${reason}" "$recovery" "$next_bearing"
   echo "== ESCALATION (milestone ${milestone_id}, run ${run_id}): ${reason} ==" >&2
   echo "Logged durably to ${TEAM_PREFIX}/escalation/${fname}" >&2
 }
@@ -499,10 +510,22 @@ LATEST_ESCALATION_MARKER="$TMP/latest-escalation-check.md"
 if run_fulcra file download "${TEAM_PREFIX}/escalation/.latest.md" "$LATEST_ESCALATION_MARKER" >/dev/null 2>&1; then
   open_spec_ref="$(grep -oE '^spec_ref:\s*\S+' "$LATEST_ESCALATION_MARKER" | awk '{print $2}' || true)"
   open_milestone="$(grep -oE '^milestone_id:\s*\S+' "$LATEST_ESCALATION_MARKER" | awk '{print $2}' || true)"
+  open_reason="$(grep -oE '^reason:\s*.*' "$LATEST_ESCALATION_MARKER" | cut -d: -f2- | xargs || true)"
   if [ -n "$open_spec_ref" ] && [ "$open_spec_ref" = "$CURRENT_SPEC_REF" ] && [ "$open_milestone" = "$CURRENT_MILESTONE_ID" ]; then
-    echo "== There is already an open escalation for spec_ref ${CURRENT_SPEC_REF}, milestone ${CURRENT_MILESTONE_ID}. Not re-attempting automatically. =="
-    echo "See ${TEAM_PREFIX}/escalation/.latest.md for details. Resolve it before the next run."
-    exit 1
+    # A dirty-tree escalation is deliberately non-destructive. Unlike a
+    # verdict/spec blocker, it becomes objectively resolved once the owning
+    # Generator has committed/pushed its correction and the tree is clean.
+    # Re-check that precondition so the scheduler can resume; never reset,
+    # stash, or auto-commit the correction to make this true.
+    clear_known_test_caches
+    if [[ "$open_reason" == "Deliverable working tree is dirty before preparing "* ]] && \
+       [ -z "$(git -C "$DELIVERABLE_DIR" status --porcelain)" ]; then
+      echo "== Prior dirty-tree safety escalation is resolved by a clean deliverable work tree; resuming ${CURRENT_MILESTONE_ID}. =="
+    else
+      echo "== There is already an open escalation for spec_ref ${CURRENT_SPEC_REF}, milestone ${CURRENT_MILESTONE_ID}. Not re-attempting automatically. =="
+      echo "See ${TEAM_PREFIX}/escalation/.latest.md for details. Resolve it before the next run."
+      exit 1
+    fi
   fi
 fi
 

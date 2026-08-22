@@ -397,6 +397,11 @@ write_status_summary() {
     echo "# Harness checkpoint"
     echo "- **Outcome:** ${outcome}"
     echo "- **Milestone:** ${CURRENT_MILESTONE_ID:-unknown}"
+    if [ "$AUTO_RETRIES_ENABLED" = "true" ]; then
+      echo "- **Retry mode:** automatic-enabled"
+    else
+      echo "- **Retry mode:** manual"
+    fi
     echo "- **Updated:** $(now_iso)"
     echo
     echo "## Where we are"

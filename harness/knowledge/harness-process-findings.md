@@ -73,3 +73,24 @@ missed.
 4. M2 is reopened as a corrective milestone; workspace progress must not
    advance to M3 until the real suite passes in a separate Evaluator
    session.
+
+## Finding 5: corrective deliverable work must remain role-owned and committed before a scheduled resumption (OPEN — M2 handoff required)
+
+**Discovered:** unattended coordinator invocation 2026-08-22T02:35Z.
+The M2 corrective branch contained tracked, uncommitted changes to
+`engine/game.py` and `docs/m2-engine.md`; the source change adds the missing
+question-slot shared-round `deadline` and the local declared suite then ran
+**139 tests, all passing**. The correction is not in `origin/main` and the
+worktree also retained a stash labelled an interrupted corrective Generator
+attempt.
+
+**Observed coordinator behavior:** the pre-branch dirty-tree guard removed
+only Python bytecode caches and escalated rather than switching/resetting the
+deliverable. That preservation is correct: an unattended coordinator must
+never auto-clean tracked source changes to make a verdict or branch setup
+appear clear.
+
+**Required handoff:** the Generator must resume the M2 corrective milestone,
+review the existing diff, commit and push it on the milestone branch, and let
+a separate Evaluator grade that committed state. The Harness Maintainer must
+not commit or otherwise patch the deliverable to clear this escalation.

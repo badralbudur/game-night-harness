@@ -304,9 +304,32 @@ prepare_milestone_branch() {
 
   clear_known_test_caches
 
+  # Dirty work is not uniformly a blocker. A corrective Generator may have
+  # been interrupted after producing valid work but before commit. If that
+  # work is already on the exact current milestone branch, preserve it in
+  # place and let Generator inspect/test/commit it on the next attempt.
+  # Do NOT reset/checkout over it. For work on any other branch, preserve
+  # it in a named git stash and record the stash reference durably before
+  # preparing the requested milestone.
   if [ -n "$(git -C "$DELIVERABLE_DIR" status --porcelain)" ]; then
-    escalate "Deliverable working tree is dirty before preparing ${milestone_id}; refusing to switch branches and risk mixing work." 0 "$milestone_id"
-    return 1
+    local current_branch stash_ref stash_name stash_note
+    current_branch="$(git -C "$DELIVERABLE_DIR" branch --show-current)"
+    if [ "$current_branch" = "$MILESTONE_BRANCH" ]; then
+      echo "== Resuming uncommitted work already on current milestone branch ${MILESTONE_BRANCH}; Generator will validate/commit it. ==" >&2
+      MILESTONE_PR_URL=""
+      return 0
+    fi
+
+    stash_name="coordinator-preserve-${current_branch:-detached}-before-${MILESTONE_BRANCH}-$(date -u +%Y%m%d-%H%M%S)"
+    if ! git -C "$DELIVERABLE_DIR" stash push -u -m "$stash_name" >/dev/null; then
+      escalate "Deliverable has unrelated dirty work on ${current_branch:-detached}; Coordinator could not create a preserving stash before ${milestone_id}." 0 "$milestone_id"
+      return 1
+    fi
+    stash_ref="$(git -C "$DELIVERABLE_DIR" stash list --format='%gd:%s' | head -1)"
+    stash_note="Preserved unrelated dirty deliverable work before ${milestone_id}. Branch: ${current_branch:-detached}. Stash: ${stash_ref}. No source work was discarded."
+    printf '%s\n' "$stash_note" > "$TMP/preparation-stash.md"
+    run_fulcra file upload "$TMP/preparation-stash.md" "${TEAM_PREFIX}/handoff/$(date -u +%Y%m%d-%H%M%S)_coordinator_preserved-dirty-work.md" >/dev/null 2>&1 || true
+    echo "== ${stash_note} ==" >&2
   fi
   if ! git -C "$DELIVERABLE_DIR" fetch origin; then
     escalate "Coordinator could not fetch deliverable remote before preparing ${milestone_id}." 0 "$milestone_id"

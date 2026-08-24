@@ -83,9 +83,12 @@ committed branch state.
 
 - Run as your own separate agent session/subagent — never a persona
   switch within the Evaluator's or Coordinator's session (spec #34).
-- If `spec.md` is ambiguous or insufficient to proceed on some point, say
-  so explicitly in your output rather than guessing — that should
-  surface as an escalation candidate, not a silent assumption.
+- If `spec.md` is ambiguous or insufficient to proceed on some point, do
+  not guess. Emit a structured request matching
+  `schemas/decision-request.md` in your output with
+  `decision_request: true`, then stop work that depends on the answer.
+  The Coordinator will make it durable in the workspace and notify the
+  user; only a subsequent user decision may change spec/decisions.
 - Never patch around a failing evaluation by hand-editing just the
   specific thing the Evaluator flagged in isolation — fix the underlying
   logic/prompt/generation approach so the same class of failure doesn't

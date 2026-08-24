@@ -26,19 +26,23 @@ the Evaluator, running as a genuinely independent session rather than a
 persona-switch, hit the *identical* blocker and reported it
 independently rather than trusting the Generator's self-report.
 
-## Finding 2: image-generation modality is genuinely ambiguous in spec.md (OPEN)
+## Finding 2: image-generation modality was ambiguous in spec.md (RESOLVED by user decision 2026-08-24)
 
 **Discovered:** run 1, flagged independently by both Generator and
 Evaluator as a real spec gap, not an environment issue.
 
-Spec #29/#32 require "a generated image" per newspaper edition and per
-city, but never specify the modality. The Generator's sandbox has no
-raster image-generation endpoint configured/reachable. Needs a decision:
-does a deterministic, game-state-informed procedural or LLM-authored SVG
-satisfy "generated image," or must an external raster image API be
-provisioned (and if so, which)?
+**Resolution:** fun, colorful raster image generation is preferred. If no
+raster image-generation provider is available, a deterministic,
+game-state-informed SVG/procedural illustration is an explicitly allowed
+fallback. The fallback is not a failure; it must still be materially
+informed by the edition/city state and meet the tone bar. The decision is
+recorded in `decisions.md`, reflected in spec #29/#32, and M5's milestone
+now requires the deliverable to record the actual modality/provider used.
 
-**Action needed:** user decision, then update `spec.md` accordingly.
+**Process lesson:** this question should have become a durable structured
+decision request at discovery rather than living only in role prose. The
+new `schemas/decision-request.md` and Coordinator decision queue address
+that for future questions.
 
 ## Finding 3: two-slot check-in on a fully idle round — spec read confirmed unambiguous (RESOLVED)
 

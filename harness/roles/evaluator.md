@@ -101,9 +101,10 @@ assert a verdict):
 - Run as your own separate agent session/subagent — never a persona
   switch within the Generator's or Coordinator's session (spec #34).
 - If a requirement is impossible to evaluate as written (ambiguous,
-  untestable), report that explicitly as its own finding — this should
-  trigger escalation per `coordinator/policy.md`, not a silent pass or
-  fail.
+  untestable), do not only mention it in prose: emit a structured
+  `decision_request: true` block matching `schemas/decision-request.md`
+  and set overall FAIL for an in-scope blocking ambiguity. The Coordinator
+  will persist/notify it; never silently pass, fail, or repair the spec.
 - Never soften or round up a verdict to "help" the Generator converge
   faster — an inflated PASS defeats the entire point of separating
   generation from evaluation.

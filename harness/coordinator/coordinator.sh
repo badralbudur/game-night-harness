@@ -454,6 +454,49 @@ write_status_summary() {
   fi
 }
 
+record_decision_request_if_present() {
+  # Roles emit a schema-shaped block when only the user can resolve a
+  # question. Preserve the entire raw role evidence rather than trusting a
+  # brittle parser, but extract the one-question line for status/dashboard
+  # notification. Return 0 when a request was recorded, 1 when absent.
+  local role="$1" output_file="$2" run_id="$3" milestone_id="$4"
+  if ! grep -qiE '^decision_request:[[:space:]]*true' "$output_file"; then
+    return 1
+  fi
+  local request_id question ts filename
+  request_id="$(grep -iE '^id:[[:space:]]*' "$output_file" | tail -1 | cut -d: -f2- | xargs || true)"
+  question="$(grep -iE '^question:[[:space:]]*' "$output_file" | tail -1 | cut -d: -f2- | xargs || true)"
+  request_id="${request_id:-${milestone_id}-${role}-decision}"
+  question="${question:-User decision required; see the durable decision request evidence.}"
+  ts="$(date -u +%Y%m%d-%H%M%S)"
+  filename="${ts}_${request_id}.md"
+  {
+    echo "---"
+    echo "type: Decision Request"
+    echo "title: ${request_id}"
+    echo "---"
+    echo
+    echo "# Decision request"
+    echo "- **From:** ${role}"
+    echo "- **Milestone:** ${milestone_id}"
+    echo "- **Run:** ${run_id}"
+    echo "- **Time:** $(now_iso)"
+    echo "- **Spec ref:** ${CURRENT_SPEC_REF}"
+    echo
+    echo "## Question"
+    echo "$question"
+    echo
+    echo "## Raw role evidence"
+    echo '```text'
+    cat "$output_file"
+    echo '```'
+  } > "$TMP/$filename"
+  run_fulcra file upload "$TMP/$filename" "${TEAM_PREFIX}/decision/$filename" >/dev/null 2>&1
+  write_status_summary "DECISION REQUIRED" "${milestone_id} requires a user-only decision from ${role}: ${question}" "The harness is paused at this milestone; a user answer must be recorded in decisions.md and reflected in an approved spec/config revision before it resumes." "Review ${TEAM_PREFIX}/decision/$filename and answer the one question through the configured origin channel."
+  echo "== DECISION REQUIRED (${milestone_id}): ${question} ==" >&2
+  return 0
+}
+
 escalate() {
   local reason="$1" run_id="$2" milestone_id="${3:-unknown}"
   local ts fname
@@ -602,6 +645,9 @@ while [ "$run_id" -le "$MAX_LOOPS" ]; do
   fi
   echo "$gen_output" > "$TMP/gen-output-${run_id}.md"
   run_fulcra file upload "$TMP/gen-output-${run_id}.md" "${TEAM_PREFIX}/member/generator/archive/${CURRENT_MILESTONE_ID}-run${run_id}-output.md" >/dev/null 2>&1 || true
+  if record_decision_request_if_present generator "$TMP/gen-output-${run_id}.md" "$run_id" "$CURRENT_MILESTONE_ID"; then
+    exit 1
+  fi
 
   # Generator owns the narrow commit/push handoff on the Coordinator-
   # prepared milestone branch. Confirm that it actually completed before
@@ -637,6 +683,9 @@ while [ "$run_id" -le "$MAX_LOOPS" ]; do
   fi
   echo "$eval_output" > "$TMP/verdict-run${run_id}.md"
   run_fulcra file upload "$TMP/verdict-run${run_id}.md" "${TEAM_PREFIX}/artifact/${CURRENT_MILESTONE_ID}-verdict-run${run_id}.md" >/dev/null 2>&1
+  if record_decision_request_if_present evaluator "$TMP/verdict-run${run_id}.md" "$run_id" "$CURRENT_MILESTONE_ID"; then
+    exit 1
+  fi
 
   overall="$(grep -oiE 'overall:[[:space:]]*(PASS|FAIL)' "$TMP/verdict-run${run_id}.md" | head -1 | awk '{print toupper($2)}' || true)"
 

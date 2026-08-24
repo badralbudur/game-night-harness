@@ -243,3 +243,11 @@ The harness (not the user) proposes the game/newspaper name — it should
 be good, not a placeholder. The harness should also use different models
 for different roles, when and as appropriate (not one fixed model for
 every role).
+
+## 2026-08-24 — [newspaper, images, user-decision]
+For v1 newspaper editions and endgame city portraits, a fun, colorful
+**raster image** is preferred. If no raster image-generation provider is
+available, a deterministic, game-state-informed **SVG/procedural
+illustration** is an explicitly permitted fallback. The fallback is not a
+spec failure; it must still be fun, colorful, and materially informed by
+the edition/city game state.

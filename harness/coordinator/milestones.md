@@ -102,15 +102,17 @@ respects `config.json`'s facilitator_questions settings.
 
 ## M5: Newspaper generation & publication
 
-**Scope:** rendering actual newspaper prose per round (the "departments"
-NAME.md already sketched — Sealed Bids, Cleared Customs, etc.), applying
+Scope: rendering actual newspaper prose per round (the "departments"
+`NAME.md` already sketched — Sealed Bids, Cleared Customs, etc.), applying
 the aggregate-phrasing style to M4's question-answer data ("the world" /
 "some countries" framing), city/mayor-only identity redaction (#28),
-tone requirements (#30), one generated image per edition (#29 — resolve
-the open image-modality ambiguity from `knowledge/harness-process-
-findings.md` Finding 2 first; escalate if still unresolved when this
-milestone starts), and publishing to a fixed, non-publicly-discoverable
-URL with a browsable archive of prior editions (#26, #27).
+tone requirements (#30), and one generated image per edition (#29):
+raster image generation is preferred when an available provider supports
+it; otherwise a deterministic, game-state-informed SVG/procedural
+illustration is an explicitly allowed fallback. The Generator must record
+which modality/provider was actually used in deliverable config/output.
+Publish to a fixed, non-publicly-discoverable URL with a browsable archive
+of prior editions (#26, #27).
 
 **Target spec requirements:** #25 (rendering), #26, #27, #28, #29, #30.
 

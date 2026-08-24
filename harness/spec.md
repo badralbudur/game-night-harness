@@ -120,7 +120,12 @@ Numbered and traceable to `decisions.md` tags in brackets.
     real name/handle. May become even more anonymous later; configurable.
     [newspaper, privacy, identity, Q26]
 29. Every edition includes a generated image, not just the final one.
-    [newspaper, endgame, Q24]
+    Preferred modality: a fun, colorful raster image from an available
+    image-generation provider. If no such provider is available, a
+    deterministic, game-state-informed SVG/procedural illustration is an
+    explicitly permitted fallback — it must still be materially informed
+    by the edition and meet the tone bar. [newspaper, endgame, Q24;
+    user decision 2026-08-24]
 30. Tone: funny, fun, colorful; humor is allowed to be pointed/not
     uniformly laudatory, but must not be snide or mean. [newspaper,
     endgame, Q24]
@@ -131,7 +136,8 @@ Numbered and traceable to `decisions.md` tags in brackets.
     game's imports/exports. [newspaper, endgame, Q24]
 32. Generate a description and image for each city informed by the game's
     actual history, treating each city's non-chosen exports as "excess."
-    [newspaper, endgame, Q24]
+    Use the raster-preferred/SVG-fallback modality policy in #29. [newspaper,
+    endgame, Q24; user decision 2026-08-24]
 
 ### Game content the Generator must produce
 33. The seeded import-need list and the game/newspaper's name are part of

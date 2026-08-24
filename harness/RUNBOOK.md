@@ -124,6 +124,14 @@ Both checks only compare against the *current* spec version, so editing
 `spec.md` and committing is the standard way to signal "there's new work
 to do" to any future invocation, attended or not.
 
+## Unattended recovery
+
+Read `coordinator/unattended-recovery.md` before attempting an unattended
+repair. It authorizes state recovery (preserving work in named stashes,
+cache cleanup, branch/worktree repair, and a clean-run proof) but never
+allows a verifier/maintainer to edit deliverable code or user-owned
+spec/decisions directly.
+
 ## Milestone branches and review PRs
 
 Before each milestone run, the Coordinator creates (or resumes) a branch

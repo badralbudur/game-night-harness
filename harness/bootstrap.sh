@@ -105,12 +105,11 @@ for f in "$HARNESS_DIR"/schemas/*.md; do
   [ -f "$f" ] || continue
   run_fulcra file upload "$f" "${TEAM_PREFIX}/knowledge/harness/schemas/$(basename "$f")"
 done
-if [ -f "$HARNESS_DIR/coordinator/policy.md" ]; then
-  run_fulcra file upload "$HARNESS_DIR/coordinator/policy.md" "${TEAM_PREFIX}/knowledge/harness/coordinator/policy.md"
-fi
-if [ -f "$HARNESS_DIR/coordinator/milestones.md" ]; then
-  run_fulcra file upload "$HARNESS_DIR/coordinator/milestones.md" "${TEAM_PREFIX}/knowledge/harness/coordinator/milestones.md"
-fi
+for coordinator_file in policy.md milestones.md unattended-recovery.md; do
+  if [ -f "$HARNESS_DIR/coordinator/$coordinator_file" ]; then
+    run_fulcra file upload "$HARNESS_DIR/coordinator/$coordinator_file" "${TEAM_PREFIX}/knowledge/harness/coordinator/$coordinator_file"
+  fi
+done
 
 # --- 4. Provision roles generically from roles/manifest.md -----------------
 # Manifest is a markdown table: | Role name | File | Responsibility | Inbox address |

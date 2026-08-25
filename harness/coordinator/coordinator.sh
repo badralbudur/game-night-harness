@@ -90,6 +90,16 @@ trap 'rm -rf "$TMP"' EXIT
 
 now_iso() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 
+# Trim captured scalar values without routing them through xargs. Workspace
+# evidence is arbitrary text (including apostrophes), while xargs treats
+# quotes as syntax and can silently erase a blocker reason.
+trim_whitespace() {
+  local value="$1"
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+  printf '%s' "$value"
+}
+
 # --- Parse milestones.md into an ordered array of "ID|Title" -----------
 MILESTONES_FILE="$HARNESS_DIR/coordinator/milestones.md"
 if [ ! -f "$MILESTONES_FILE" ]; then
@@ -464,8 +474,8 @@ record_decision_request_if_present() {
     return 1
   fi
   local request_id question ts filename
-  request_id="$(grep -iE '^id:[[:space:]]*' "$output_file" | tail -1 | cut -d: -f2- | xargs || true)"
-  question="$(grep -iE '^question:[[:space:]]*' "$output_file" | tail -1 | cut -d: -f2- | xargs || true)"
+  request_id="$(trim_whitespace "$(grep -iE '^id:[[:space:]]*' "$output_file" | tail -1 | cut -d: -f2- || true)")"
+  question="$(trim_whitespace "$(grep -iE '^question:[[:space:]]*' "$output_file" | tail -1 | cut -d: -f2- || true)")"
   request_id="${request_id:-${milestone_id}-${role}-decision}"
   question="${question:-User decision required; see the durable decision request evidence.}"
   ts="$(date -u +%Y%m%d-%H%M%S)"
@@ -560,7 +570,7 @@ CURRENT_MILESTONE_INDEX=0
 COMPLETED_MILESTONES=""
 if run_fulcra file download "${TEAM_PREFIX}/milestone-progress.md" "$PROGRESS_MARKER" >/dev/null 2>&1; then
   current_id="$(grep -oE '^current:\s*\S+' "$PROGRESS_MARKER" | awk '{print $2}' || true)"
-  COMPLETED_MILESTONES="$(grep -oE '^completed:\s*.*' "$PROGRESS_MARKER" | cut -d: -f2- | xargs || true)"
+  COMPLETED_MILESTONES="$(trim_whitespace "$(grep -oE '^completed:\s*.*' "$PROGRESS_MARKER" | cut -d: -f2- || true)")"
   for i in "${!MILESTONE_IDS[@]}"; do
     if [ "${MILESTONE_IDS[$i]}" = "$current_id" ]; then
       CURRENT_MILESTONE_INDEX=$i
@@ -581,7 +591,7 @@ LATEST_ESCALATION_MARKER="$TMP/latest-escalation-check.md"
 if run_fulcra file download "${TEAM_PREFIX}/escalation/.latest.md" "$LATEST_ESCALATION_MARKER" >/dev/null 2>&1; then
   open_spec_ref="$(grep -oE '^spec_ref:\s*\S+' "$LATEST_ESCALATION_MARKER" | awk '{print $2}' || true)"
   open_milestone="$(grep -oE '^milestone_id:\s*\S+' "$LATEST_ESCALATION_MARKER" | awk '{print $2}' || true)"
-  open_reason="$(grep -oE '^reason:\s*.*' "$LATEST_ESCALATION_MARKER" | cut -d: -f2- | xargs || true)"
+  open_reason="$(trim_whitespace "$(grep -oE '^reason:\s*.*' "$LATEST_ESCALATION_MARKER" | cut -d: -f2- || true)")"
   if [ -n "$open_spec_ref" ] && [ "$open_spec_ref" = "$CURRENT_SPEC_REF" ] && [ "$open_milestone" = "$CURRENT_MILESTONE_ID" ]; then
     # A dirty-tree escalation is deliberately non-destructive. Unlike a
     # verdict/spec blocker, it becomes objectively resolved once the owning

@@ -593,11 +593,17 @@ if run_fulcra file download "${TEAM_PREFIX}/escalation/.latest.md" "$LATEST_ESCA
   open_milestone="$(grep -oE '^milestone_id:\s*\S+' "$LATEST_ESCALATION_MARKER" | awk '{print $2}' || true)"
   open_reason="$(trim_whitespace "$(grep -oE '^reason:\s*.*' "$LATEST_ESCALATION_MARKER" | cut -d: -f2- || true)")"
   if [ -n "$open_spec_ref" ] && [ "$open_spec_ref" = "$CURRENT_SPEC_REF" ] && [ "$open_milestone" = "$CURRENT_MILESTONE_ID" ]; then
+    # Provider/session limits are transient capacity failures, not durable
+    # domain or state blockers. Preserve their escalation evidence but allow
+    # a later scheduler invocation to retry after the provider resets.
+    if echo "$open_reason" | grep -qiE 'usage limit|session limit|HTTP 429|rate limit'; then
+      echo "== Prior ${CURRENT_MILESTONE_ID} escalation was a transient provider-capacity limit; allowing retry on this invocation. =="
     # A dirty-tree escalation is deliberately non-destructive. Unlike a
     # verdict/spec blocker, it becomes objectively resolved once the owning
     # Generator has committed/pushed its correction and the tree is clean.
     # Re-check that precondition so the scheduler can resume; never reset,
     # stash, or auto-commit the correction to make this true.
+    else
     clear_known_test_caches
     if [[ "$open_reason" == "Deliverable working tree is dirty before preparing "* ]] && \
        [ -z "$(git -C "$DELIVERABLE_DIR" status --porcelain)" ]; then
@@ -613,6 +619,7 @@ if run_fulcra file download "${TEAM_PREFIX}/escalation/.latest.md" "$LATEST_ESCA
       echo "== There is already an open escalation for spec_ref ${CURRENT_SPEC_REF}, milestone ${CURRENT_MILESTONE_ID}. Not re-attempting automatically. =="
       echo "Refreshed durable status and dashboard hook; see ${TEAM_PREFIX}/escalation/.latest.md for details. Resolve it before the next run."
       exit 1
+    fi
     fi
   fi
 fi

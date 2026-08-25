@@ -523,7 +523,10 @@ record_decision_request_if_present() {
     cat "$output_file"
     echo '```'
   } > "$TMP/$filename"
-  run_fulcra file upload "$TMP/$filename" "${TEAM_PREFIX}/decision/$filename" >/dev/null 2>&1
+  if ! upload_required "$TMP/$filename" "${TEAM_PREFIX}/decision/$filename"; then
+    echo "CRITICAL: decision request could not be persisted; refusing to continue milestone." >&2
+    return 1
+  fi
   write_status_summary "DECISION REQUIRED" "${milestone_id} requires a user-only decision from ${role}: ${question}" "The harness is paused at this milestone; a user answer must be recorded in decisions.md and reflected in an approved spec/config revision before it resumes." "Review ${TEAM_PREFIX}/decision/$filename and answer the one question through the configured origin channel."
   echo "== DECISION REQUIRED (${milestone_id}): ${question} ==" >&2
   return 0
@@ -548,7 +551,9 @@ escalate() {
     echo "- **Spec ref:** ${CURRENT_SPEC_REF:-unknown}"
     echo "- **Status:** open"
   } > "$TMP/${fname}"
-  run_fulcra file upload "$TMP/${fname}" "${TEAM_PREFIX}/escalation/${fname}"
+  if ! upload_required "$TMP/${fname}" "${TEAM_PREFIX}/escalation/${fname}"; then
+    echo "CRITICAL: escalation evidence could not be persisted." >&2
+  fi
   {
     echo "spec_ref: ${CURRENT_SPEC_REF:-unknown}"
     echo "milestone_id: ${milestone_id}"
@@ -556,7 +561,9 @@ escalate() {
     echo "reason: ${reason}"
     echo "timestamp: $(now_iso)"
   } > "$TMP/latest-escalation.md"
-  run_fulcra file upload "$TMP/latest-escalation.md" "${TEAM_PREFIX}/escalation/.latest.md"
+  if ! upload_required "$TMP/latest-escalation.md" "${TEAM_PREFIX}/escalation/.latest.md"; then
+    echo "CRITICAL: latest escalation pointer could not be persisted." >&2
+  fi
   local recovery next_bearing
   if [ "$AUTO_RETRIES_ENABLED" = "true" ]; then
     recovery="Resolve the recorded blocker or adjust the harness/process. Automatic role/verdict retries are enabled, but this safety escalation remains blocked until its recorded precondition is resolved."

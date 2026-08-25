@@ -415,6 +415,23 @@ coordinator_merge_milestone_pr() {
   return 0
 }
 
+upload_required() {
+  # Durable status/decision/progress records are not best-effort. Fulcra
+  # File Store can transiently fail; retry a small bounded number of times
+  # and surface an explicit failure instead of silently pretending a
+  # dashboard/status record exists.
+  local local_file="$1" remote_file="$2" attempts="${3:-3}" attempt
+  for attempt in $(seq 1 "$attempts"); do
+    if run_fulcra file upload "$local_file" "$remote_file" >/dev/null 2>&1; then
+      return 0
+    fi
+    echo "WARNING: durable upload attempt ${attempt}/${attempts} failed: ${remote_file}" >&2
+    [ "$attempt" -lt "$attempts" ] && sleep "$attempt"
+  done
+  echo "CRITICAL: unable to write required durable record after ${attempts} attempts: ${remote_file}" >&2
+  return 1
+}
+
 write_status_summary() {
   # write_status_summary <outcome> <where-we-are> <where-were-going> <next-bearing>
   # A compact, durable status checkpoint after EVERY terminal harness
@@ -446,7 +463,12 @@ write_status_summary() {
     echo "## Next bearing"
     echo "$next"
   } > "$TMP/status-summary.md"
-  run_fulcra file upload "$TMP/status-summary.md" "${TEAM_PREFIX}/status-summary.md" >/dev/null 2>&1 || true
+  if ! upload_required "$TMP/status-summary.md" "${TEAM_PREFIX}/status-summary.md"; then
+    # Do not call dashboard hook against a missing/stale status file.
+    # Caller still emits its primary escalation/error, now with explicit
+    # evidence that visibility persistence itself failed.
+    return 1
+  fi
 
   # Optional, non-portable integration hook: this portable harness never
   # assumes a dashboard host/provider, but an operator may set

@@ -101,15 +101,27 @@ not commit or otherwise patch the deliverable to clear this escalation.
 
 ## Finding 6: a terminal scheduled outcome needs a non-silent origin report (RESOLVED)
 
-**Discovered:** scheduler-owned execution `8cf571ba4c54461db4d5615ae136fad6`
-completed at 2026-08-22T20:49:04Z. Its workspace status checkpoint and the
-dashboard data both refreshed at 2026-08-22T20:48:14Z, but the job's own
-persisted response was `[SILENT]`. The Hermes ledger showed no delivery error,
-but `[SILENT]` intentionally suppresses the origin message, so that is not
-independent delivery evidence for this terminal coordinator outcome.
+**Discovered:** a scheduler-owned execution completed with Workspace status
+and dashboard data refreshed, but its persisted response was `[SILENT]`.
+Scheduler completion and durable state are not independent origin-delivery
+evidence when a response deliberately suppresses delivery.
 
-**Fix:** the weekend coordinator cron prompt now explicitly requires a concise,
-non-silent origin report after every terminal coordinator invocation, including
-a correctly blocked short-circuit. It may use `[SILENT]` only when no
-coordinator invocation occurred. Durable workspace and dashboard state remain
-the source of truth; the report is an independently observable notification.
+**Fix:** unattended coordinator prompts now require a concise, non-silent
+origin report after every terminal coordinator invocation, including a
+correctly blocked short-circuit. `[SILENT]` is permitted only when no
+coordinator invocation occurred. Workspace/dashboard state remains
+canonical; the report is an independent notification.
+
+## Finding 7: M5 combined two independent integration boundaries and exceeded provider session capacity (RESOLVED by milestone split)
+
+**Discovered:** repeated M5 Generator sessions produced substantial
+newspaper rendering/config/test work and a full local suite pass, but hit
+provider session limits before committing/pushing. M5 combined rendering,
+redaction, aggregate phrasing, image strategy, private hosting, and archive
+integration in one task — too large a unit for a reliable role invocation.
+
+**Fix:** retain M5 as newspaper rendering core (local edition artifact,
+identity/tone/image policy) and add M6 for publication/archive integration.
+Endgame and full integration move to M7/M8. Existing meaningful M5 branch
+work is resumed in place, not discarded. This is a milestone-design fix,
+not a deliverable patch.

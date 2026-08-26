@@ -100,42 +100,53 @@ per the Finding-3 reading already confirmed correct — see
 `knowledge/harness-process-findings.md`) and that question selection
 respects `config.json`'s facilitator_questions settings.
 
-## M5: Newspaper generation & publication
+## M5: Newspaper rendering core
 
-Scope: rendering actual newspaper prose per round (the "departments"
-`NAME.md` already sketched — Sealed Bids, Cleared Customs, etc.), applying
-the aggregate-phrasing style to M4's question-answer data ("the world" /
-"some countries" framing), city/mayor-only identity redaction (#28),
-tone requirements (#30), and one generated image per edition (#29):
-raster image generation is preferred when an available provider supports
-it; otherwise a deterministic, game-state-informed SVG/procedural
-illustration is an explicitly allowed fallback. The Generator must record
-which modality/provider was actually used in deliverable config/output.
-Publish to a fixed, non-publicly-discoverable URL with a browsable archive
-of prior editions (#26, #27).
+**Scope:** render actual newspaper prose per simulated round (the
+"departments" `NAME.md` sketches — Sealed Bids, Cleared Customs, etc.),
+apply M4 aggregate-answer data ("the world" / "some countries" framing),
+enforce city/mayor-only identity redaction (#28), meet the tone requirement
+(#30), and generate one edition image (#29). Raster image generation is
+preferred when an available provider supports it; otherwise a deterministic,
+game-state-informed SVG/procedural illustration is an explicitly allowed
+fallback. Record the actual modality/provider in deliverable config/output.
 
-**Target spec requirements:** #25 (rendering), #26, #27, #28, #29, #30.
+**Target spec requirements:** #25 (rendering), #28, #29, #30.
 
-**Done when:** at least one full simulated round (using M1-M4's engine
-and content) produces a real published edition, reachable at a stable
-URL, with a prior-edition archive link, correct identity redaction, and
-passes the Evaluator's judged tone check.
+**Done when:** at least one full simulated round produces a local/rendered
+edition artifact with correct identity redaction, aggregate phrasing,
+recorded image modality, and a passing judged tone review. Do **not** block
+this milestone on public/private hosting or archive deployment; M6 owns
+that separate integration boundary.
 
-## M6: Endgame content
+## M6: Newspaper publication & archive
 
-**Scope:** crowning the cumulative-profit winner, the tongue-in-cheek
-twist article, and per-city descriptions/images built from actual game
-history with non-chosen exports framed as "excess" (#31, #32).
+**Scope:** take M5's rendered editions and publish them to a fixed,
+non-publicly-discoverable URL; preserve browseable prior-edition archive;
+verify the isolated public manifest and delivery privacy rules.
+
+**Target spec requirements:** #26, #27.
+
+**Done when:** a M5-rendered edition is reachable at a stable URL, its
+archive exposes at least one prior edition without overwriting it, and the
+Evaluator verifies that only intentionally curated public files are
+published (no inboxes, raw verdicts, credentials, or private repo data).
+
+## M7: Endgame content
+
+**Scope:** crown the cumulative-profit winner, the tongue-in-cheek twist
+article, and per-city descriptions/images built from actual game history
+with non-chosen exports framed as "excess" (#31, #32).
 
 **Target spec requirements:** #31, #32.
 
-**Done when:** a full simulated game (multiple rounds via M2-M5) reaches
+**Done when:** a full simulated game (multiple rounds via M2-M6) reaches
 its end condition and produces all three endgame artifacts, passing the
 Evaluator's judged quality checks.
 
-## M7: Full-spec integration & regression pass
+## M8: Full-spec integration & regression pass
 
-**Scope:** no new features — wire M1-M6 together end to end, run a
+**Scope:** no new features — wire M1-M7 together end to end, run a
 complete simulated game with real spawned simulated players (varying
 engagement levels, per spec's Generation Rules) rather than milestone-
 scoped unit tests, and confirm every spec requirement (#1-#35) holds
@@ -144,8 +155,8 @@ simultaneously, not just per-milestone in isolation.
 **Target spec requirements:** all of them, as an integration check.
 
 **Done when:** the Evaluator's full deterministic + judged checklist
-(spec.md's Evaluation Criteria section, in full) passes end to end
-against one complete simulated game run.
+(spec.md's Evaluation Criteria section, in full) passes end to end against
+one complete simulated game run.
 
 ## Milestone progress tracking
 

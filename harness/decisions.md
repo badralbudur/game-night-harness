@@ -251,3 +251,13 @@ available, a deterministic, game-state-informed **SVG/procedural
 illustration** is an explicitly permitted fallback. The fallback is not a
 spec failure; it must still be fun, colorful, and materially informed by
 the edition/city game state.
+
+## 2026-08-27 — [endgame, newspaper, privacy, user-decision]
+Resolve the #32/#21 endgame conflict as follows: portray each city's
+**excess** as offers it received and declined (declined imports), not as
+its own non-winning outgoing export text. Preserve #21's prohibition on
+exposing non-winning export origins. Separately, portray the **production
+of winning exports** in the exporter cities — e.g. factories, fields,
+workshops, or other fun/colorful production scenes. Winner origin may be
+shown because the winning city's profit increase already makes that origin
+inferable; this permission does not extend to non-winning exports.

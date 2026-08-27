@@ -135,8 +135,11 @@ published (no inboxes, raw verdicts, credentials, or private repo data).
 ## M7: Endgame content
 
 **Scope:** crown the cumulative-profit winner, the tongue-in-cheek twist
-article, and per-city descriptions/images built from actual game history
-with non-chosen exports framed as "excess" (#31, #32).
+article, and per-city descriptions/images built from actual game history.
+Each importing city's excess is the declined offers it received; each
+winning exporter city additionally shows fun/colorful production of its
+winning export. Winner origin is displayable; non-winning origin/text
+remains protected. [spec #21/#32; user decision 2026-08-27]
 
 **Target spec requirements:** #31, #32.
 

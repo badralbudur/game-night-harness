@@ -135,9 +135,15 @@ Numbered and traceable to `decisions.md` tags in brackets.
     a tongue-in-cheek "twist" article about problems caused by some of the
     game's imports/exports. [newspaper, endgame, Q24]
 32. Generate a description and image for each city informed by the game's
-    actual history, treating each city's non-chosen exports as "excess."
-    Use the raster-preferred/SVG-fallback modality policy in #29. [newspaper,
-    endgame, Q24; user decision 2026-08-24]
+    actual history. For each importing city, portray its **excess** as
+    offers it received and declined (declined imports), never revealing
+    non-winning exporter identity/text in violation of #21. For each city
+    that supplied a winning export, also portray fun/colorful **production
+    of that winning export** (e.g. factories, fields, workshops). Winner
+    origin may be shown because it is already inferable from the winning
+    profit/leaderboard; this exception never extends to non-winning
+    exports. Use the raster-preferred/SVG-fallback modality policy in #29.
+    [newspaper, endgame, Q24; user decision 2026-08-27]
 
 ### Game content the Generator must produce
 33. The seeded import-need list and the game/newspaper's name are part of

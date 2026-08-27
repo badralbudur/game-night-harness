@@ -805,7 +805,12 @@ while [ "$run_id" -le "$MAX_LOOPS" ]; do
       write_status_summary "PASS — ALL MILESTONES" "${CURRENT_MILESTONE_ID} passed independent evaluation and its approved PR merged into main; all planned milestones are complete." "The harness has converged on the current spec version. Further work requires a user-approved spec or milestone change." "Review the full integration evidence and decide whether to begin real-player testing or revise the spec."
     else
       echo "== Next milestone (${MILESTONE_IDS[$next_index]}) will be attempted on the next coordinator invocation. =="
-      write_status_summary "PASS" "${CURRENT_MILESTONE_ID} passed independent evaluation and its approved PR merged into main." "The harness now moves to ${MILESTONE_IDS[$next_index]}: ${MILESTONE_TITLES[$next_index]}." "Create/resume the ${MILESTONE_IDS[$next_index]} review branch and run one explicit manual Generator → Evaluator attempt."
+      if [ "$AUTO_RETRIES_ENABLED" = "true" ]; then
+        next_bearing="Create/resume the ${MILESTONE_IDS[$next_index]} review branch; the next scheduled Coordinator invocation will run its Generator → Evaluator attempt."
+      else
+        next_bearing="Create/resume the ${MILESTONE_IDS[$next_index]} review branch and run one explicit manual Generator → Evaluator attempt."
+      fi
+      write_status_summary "PASS" "${CURRENT_MILESTONE_ID} passed independent evaluation and its approved PR merged into main." "The harness now moves to ${MILESTONE_IDS[$next_index]}: ${MILESTONE_TITLES[$next_index]}." "$next_bearing"
     fi
     exit 0
   elif [ "$overall" = "FAIL" ]; then

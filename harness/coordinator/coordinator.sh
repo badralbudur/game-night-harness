@@ -520,7 +520,14 @@ record_decision_request_if_present() {
   request_id="$(trim_whitespace "$(grep -iE '^id:[[:space:]]*' "$output_file" | tail -1 | cut -d: -f2- || true)")"
   question="$(trim_whitespace "$(grep -iE '^question:[[:space:]]*' "$output_file" | tail -1 | cut -d: -f2- || true)")"
   request_id="${request_id:-${milestone_id}-${role}-decision}"
-  question="${question:-User decision required; see the durable decision request evidence.}"
+  if [ -z "$question" ]; then
+    requirement="$(trim_whitespace "$(grep -iE '^requirement:[[:space:]]*' "$output_file" | tail -1 | cut -d: -f2- || true)")"
+    if [ -n "$requirement" ]; then
+      question="Resolve ${requirement}: choose a privacy-safe interpretation; see the durable decision request evidence for options."
+    else
+      question="User decision required; see the durable decision request evidence."
+    fi
+  fi
   ts="$(date -u +%Y%m%d-%H%M%S)"
   filename="${ts}_${request_id}.md"
   {

@@ -548,6 +548,23 @@ record_decision_request_if_present() {
     echo "CRITICAL: decision request could not be persisted; refusing to continue milestone." >&2
     return 1
   fi
+  # Unlike a timestamped decision record, this mutable pointer lets a fresh
+  # unattended Coordinator see that a user-only question is still open and
+  # avoid silently starting another Generator attempt on the same spec and
+  # milestone.  The dated record above remains the audit evidence; a
+  # committed spec/config revision naturally invalidates this pointer via
+  # spec_ref once the user has answered.
+  {
+    echo "spec_ref: ${CURRENT_SPEC_REF}"
+    echo "milestone_id: ${milestone_id}"
+    echo "decision_file: ${filename}"
+    echo "question: ${question}"
+    echo "timestamp: $(now_iso)"
+  } > "$TMP/latest-decision.md"
+  if ! upload_required "$TMP/latest-decision.md" "${TEAM_PREFIX}/decision/.latest.md"; then
+    echo "CRITICAL: decision-request pointer could not be persisted; refusing to continue milestone." >&2
+    return 1
+  fi
   write_status_summary "DECISION REQUIRED" "${milestone_id} requires a user-only decision from ${role}: ${question}" "The harness is paused at this milestone; a user answer must be recorded in decisions.md and reflected in an approved spec/config revision before it resumes." "Review ${TEAM_PREFIX}/decision/$filename and answer the one question through the configured origin channel."
   echo "== DECISION REQUIRED (${milestone_id}): ${question} ==" >&2
   return 0
@@ -633,6 +650,23 @@ CURRENT_MILESTONE_TITLE="${MILESTONE_TITLES[$CURRENT_MILESTONE_INDEX]}"
 
 echo "== Current milestone: ${CURRENT_MILESTONE_ID} (${CURRENT_MILESTONE_TITLE}) [${CURRENT_MILESTONE_INDEX}/${#MILESTONE_IDS[@]}] =="
 echo "== Previously completed: ${COMPLETED_MILESTONES:-none} =="
+
+# --- Do-nothing short-circuit #2: pending user decision for THIS spec
+# and milestone.  A decision request is terminal state, not Generator
+# feedback to retry.  Its dated evidence stays in decision/; .latest.md is
+# only the mutable, scheduler-readable pointer.
+LATEST_DECISION_MARKER="$TMP/latest-decision-check.md"
+if run_fulcra file download "${TEAM_PREFIX}/decision/.latest.md" "$LATEST_DECISION_MARKER" >/dev/null 2>&1; then
+  open_decision_spec="$(grep -oE '^spec_ref:\s*\S+' "$LATEST_DECISION_MARKER" | awk '{print $2}' || true)"
+  open_decision_milestone="$(grep -oE '^milestone_id:\s*\S+' "$LATEST_DECISION_MARKER" | awk '{print $2}' || true)"
+  open_decision_question="$(trim_whitespace "$(grep -oE '^question:\s*.*' "$LATEST_DECISION_MARKER" | cut -d: -f2- || true)")"
+  open_decision_file="$(trim_whitespace "$(grep -oE '^decision_file:\s*.*' "$LATEST_DECISION_MARKER" | cut -d: -f2- || true)")"
+  if [ "$open_decision_spec" = "$CURRENT_SPEC_REF" ] && [ "$open_decision_milestone" = "$CURRENT_MILESTONE_ID" ]; then
+    write_status_summary "DECISION REQUIRED — BLOCKED" "${CURRENT_MILESTONE_ID} remains paused for the user-only decision: ${open_decision_question:-see durable decision evidence}." "No role will be re-invoked until the user answer is recorded in decisions.md and an approved spec/config revision changes the spec reference." "Review ${TEAM_PREFIX}/decision/${open_decision_file:-.latest.md} and answer the one question through the configured origin channel."
+    echo "== Pending user decision for ${CURRENT_MILESTONE_ID}; not re-invoking roles. =="
+    exit 1
+  fi
+fi
 
 # --- Do-nothing short-circuit #2: open escalation for THIS spec_ref AND
 #     THIS milestone (a milestone advance or spec revision naturally

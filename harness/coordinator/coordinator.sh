@@ -415,6 +415,27 @@ coordinator_merge_milestone_pr() {
   return 0
 }
 
+clear_resolved_latest_escalation() {
+  # A successful merge is objective proof that the current milestone's
+  # prior blocker was repaired. Retain the immutable escalation evidence,
+  # but remove only the mutable .latest pointer when it names this exact
+  # spec + milestone; otherwise a stale "open" marker misstates a PASS and
+  # can block a later resumed milestone.
+  local marker="$TMP/latest-escalation-resolve.md" pointer_spec pointer_milestone
+  if ! run_fulcra file download "${TEAM_PREFIX}/escalation/.latest.md" "$marker" >/dev/null 2>&1; then
+    return 0
+  fi
+  pointer_spec="$(grep -oE '^spec_ref:\s*\S+' "$marker" | awk '{print $2}' || true)"
+  pointer_milestone="$(grep -oE '^milestone_id:\s*\S+' "$marker" | awk '{print $2}' || true)"
+  if [ "$pointer_spec" = "$CURRENT_SPEC_REF" ] && [ "$pointer_milestone" = "$CURRENT_MILESTONE_ID" ]; then
+    if ! run_fulcra file delete "${TEAM_PREFIX}/escalation/.latest.md" >/dev/null 2>&1; then
+      echo "CRITICAL: ${CURRENT_MILESTONE_ID} merged but could not clear its resolved latest-escalation pointer." >&2
+      return 1
+    fi
+    echo "== Cleared resolved latest escalation pointer for ${CURRENT_MILESTONE_ID}; historical evidence remains. ==" >&2
+  fi
+}
+
 upload_required() {
   # Durable status/decision/progress records are not best-effort. Fulcra
   # File Store can transiently fail; retry a small bounded number of times
@@ -753,6 +774,13 @@ while [ "$run_id" -le "$MAX_LOOPS" ]; do
       exit 1  # merge function already escalated; don't advance milestone
     fi
     echo "== Approved milestone PR merged: ${MILESTONE_PR_URL} ==" >&2
+    if ! clear_resolved_latest_escalation; then
+      # The approved product change is already merged; do not manufacture a
+      # new escalation over it, but fail visibly rather than reporting an
+      # unambiguously clean handoff while its stale blocker remains active.
+      write_status_summary "PASS — ESCALATION POINTER REPAIR NEEDED" "${CURRENT_MILESTONE_ID} passed independent evaluation and its approved PR merged into main, but the resolved latest-escalation pointer could not be cleared." "Historical escalation evidence is retained; only its stale mutable pointer needs repair before the next run." "Delete ${TEAM_PREFIX}/escalation/.latest.md only after verifying it names this now-passed milestone, then run one Coordinator preflight."
+      exit 1
+    fi
     new_completed="${COMPLETED_MILESTONES:+$COMPLETED_MILESTONES,}${CURRENT_MILESTONE_ID}"
     next_index=$((CURRENT_MILESTONE_INDEX + 1))
     {

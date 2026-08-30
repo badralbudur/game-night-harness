@@ -632,8 +632,14 @@ CONVERGED_MARKER="$TMP/converged-check.md"
 if run_fulcra file download "${TEAM_PREFIX}/converged.md" "$CONVERGED_MARKER" >/dev/null 2>&1; then
   converged_spec_ref="$(grep -oE '^spec_ref:\s*\S+' "$CONVERGED_MARKER" | awk '{print $2}' || true)"
   if [ -n "$converged_spec_ref" ] && [ "$converged_spec_ref" = "$CURRENT_SPEC_REF" ]; then
+    # A convergence short-circuit is still a terminal scheduled outcome.
+    # Persist a fresh checkpoint and invoke the optional dashboard publisher
+    # so its operator-facing status cannot go stale merely because no roles
+    # need to run.  There is no active milestone after full convergence.
+    CURRENT_MILESTONE_ID="ALL"
+    write_status_summary "PASS — ALL MILESTONES" "All planned milestones are complete for the current spec; the coordinator correctly skipped role invocation." "The harness has converged on the current spec version. Further work requires a user-approved spec or milestone change." "Review the full integration evidence and decide whether to begin real-player testing or revise the spec."
     echo "== Already converged (all milestones complete) for spec_ref ${CURRENT_SPEC_REF} -- nothing new to do. =="
-    echo "(To force more work, revise spec.md/milestones.md, or delete ${TEAM_PREFIX}/converged.md.)"
+    echo "(Refreshed durable status and dashboard hook; to force more work, revise spec.md/milestones.md, or delete ${TEAM_PREFIX}/converged.md.)"
     exit 0
   fi
 fi

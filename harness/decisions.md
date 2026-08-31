@@ -261,3 +261,21 @@ of winning exports** in the exporter cities — e.g. factories, fields,
 workshops, or other fun/colorful production scenes. Winner origin may be
 shown because the winning city's profit increase already makes that origin
 inferable; this permission does not extend to non-winning exports.
+
+## 2026-08-31 — [imports, player-agency, newspaper, user-decision]
+Smoke-test feedback: an importing mayor must choose what their city will
+import next. Present a small set of suggestions, but let the mayor make a
+freeform import request instead. A suggestion added merely to the shared
+pool is not an adequate substitute for choosing that city's next import.
+
+## 2026-08-31 — [imports, game-content, user-decision]
+Imports must be actual tradable goods, materials, food (including candy),
+equipment, living things, cultural works, or services. They may be funny
+and creative, but an import prompt must not be merely a request for advice
+or generic civic problem solving.
+
+## 2026-08-31 — [newspaper, delivery, user-decision]
+The facilitator flow must automatically render and publish the redacted
+newspaper edition after every completed round, then notify the group that
+the new edition is available. A manually callable renderer alone is not a
+complete gameplay flow.

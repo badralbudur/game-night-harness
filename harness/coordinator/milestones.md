@@ -161,6 +161,27 @@ simultaneously, not just per-milestone in isolation.
 (spec.md's Evaluation Criteria section, in full) passes end to end against
 one complete simulated game run.
 
+## M9: Importer agency, actual trade, and automatic round editions
+
+**Scope:** revise the completed runtime in response to the 2026-08-31
+smoke test. An importing mayor chooses their next import from a small set
+of eligible seeded suggestions or supplies a freeform import request; the
+selection must be the city's actual next need and respect existing
+category/repetition rules. Rewrite the seeded import content around
+tradable goods/services rather than advice prompts. Integrate redacted
+edition rendering/publication and group-availability notice into the
+facilitator's completed-round transaction.
+
+**Target spec requirements:** #13, #13a, #14, #15, #21, #26–#30, #33.
+
+**Done when:** deterministic tests prove that an importer can choose a
+suggested or freeform request and cannot receive an unchosen random need;
+test fixtures demonstrate actual goods/services in prompts and offers;
+and a complete round automatically writes exactly one redacted edition
+plus an availability notice without leaking a losing exporter. The
+Evaluator runs the whole regression suite and reviews a generated edition
+for readable trade-centered tone.
+
 ## Milestone progress tracking
 
 The coordinator tracks current/completed milestones in the workspace at

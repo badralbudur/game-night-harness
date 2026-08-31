@@ -653,10 +653,24 @@ if run_fulcra file download "${TEAM_PREFIX}/milestone-progress.md" "$PROGRESS_MA
   COMPLETED_MILESTONES="$(trim_whitespace "$(grep -oE '^completed:\s*.*' "$PROGRESS_MARKER" | cut -d: -f2- || true)")"
   for i in "${!MILESTONE_IDS[@]}"; do
     if [ "${MILESTONE_IDS[$i]}" = "$current_id" ]; then
-      CURRENT_MILESTONE_INDEX=$i
+      CURRENT_MILESTONE_INDEX="$i"
       break
     fi
   done
+  # A harness revision can append a new milestone after an earlier spec
+  # converged.  The durable marker then says ``current: (none ...)`` rather
+  # than naming the newly appended work.  Resume at the first milestone not
+  # already recorded as completed, instead of restarting M1 and asking a
+  # Generator to rebuild an already-merged deliverable.  The new milestone's
+  # Evaluator still owns regression coverage of the prior work.
+  if [ "${MILESTONE_IDS[$CURRENT_MILESTONE_INDEX]}" != "$current_id" ]; then
+    for i in "${!MILESTONE_IDS[@]}"; do
+      if ! [[ ",${COMPLETED_MILESTONES}," == *",${MILESTONE_IDS[$i]},"* ]]; then
+        CURRENT_MILESTONE_INDEX="$i"
+        break
+      fi
+    done
+  fi
 fi
 CURRENT_MILESTONE_ID="${MILESTONE_IDS[$CURRENT_MILESTONE_INDEX]}"
 CURRENT_MILESTONE_TITLE="${MILESTONE_TITLES[$CURRENT_MILESTONE_INDEX]}"

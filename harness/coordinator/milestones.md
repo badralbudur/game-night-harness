@@ -182,6 +182,25 @@ plus an availability notice without leaking a losing exporter. The
 Evaluator runs the whole regression suite and reviews a generated edition
 for readable trade-centered tone.
 
+## M10: Newspaper reading experience and latest-edition navigation
+
+**Scope:** make the public paper look and behave like a newspaper readers
+would actually use. Improve editorial hierarchy, typography, department
+layout, edition imagery, and responsive presentation without weakening
+redaction or the curated-publication boundary. Make the fixed paper URL
+open the latest edition by default, while preserving direct permanent links
+to every prior issue and providing clear latest/archive/previous/next
+navigation on every edition.
+
+**Target spec requirements:** #21, #26–#30, #30a.
+
+**Done when:** automated tests prove root/latest routing and archive/adjacent
+navigation without breaking permanent prior-edition URLs; image and page
+tests prove each issue still carries a game-informed image and passes the
+publication guard; and the Evaluator reviews rendered desktop and narrow
+layouts for a convincing, readable newspaper experience rather than a
+plain report.
+
 ## Milestone progress tracking
 
 The coordinator tracks current/completed milestones in the workspace at

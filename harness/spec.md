@@ -142,6 +142,14 @@ Numbered and traceable to `decisions.md` tags in brackets.
 30. Tone: funny, fun, colorful; humor is allowed to be pointed/not
     uniformly laudatory, but must not be snide or mean. [newspaper,
     endgame, Q24]
+30a. The public archive must read visually as a real newspaper rather than
+     a plain document: intentional editorial hierarchy, masthead, readable
+     columns/department treatment, and edition images that are materially
+     more expressive than minimal procedural placeholders. The stable paper
+     URL opens the newest available edition by default; every edition has
+     clear navigation to the latest issue, archive, and adjacent editions
+     where applicable. [newspaper, design, navigation, 2026-09-01 user
+     decision]
 
 ### Endgame
 31. At game end: crown the overall cumulative-profit winner; also publish
@@ -232,6 +240,10 @@ Deterministic checks (script/rule-based, no subjective judgment):
   remain reachable at the same URL (archive, not overwrite), an automated
   completion transaction produces the edition/notification, and city/mayor
   identity only (never real name/handle) (#26–#28).
+- Newspaper reading experience: automated checks exercise default routing
+  to the latest edition and navigation across the archive; the Evaluator
+  judges the rendered hierarchy, styling, and materially game-informed
+  imagery against #30a rather than accepting a plain report page.
 - `config.json` is the single source for every configurable parameter;
   no role hardcodes a value that config.json defines.
 

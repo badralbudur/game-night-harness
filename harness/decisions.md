@@ -279,3 +279,10 @@ The facilitator flow must automatically render and publish the redacted
 newspaper edition after every completed round, then notify the group that
 the new edition is available. A manually callable renderer alone is not a
 complete gameplay flow.
+
+## 2026-09-01 — [newspaper, design, navigation, user-decision]
+The newspaper must look and feel more like a real newspaper: improve the
+publication's visual styling and edition images. The publication URL should
+open on the latest edition by default, with clear navigation to the archive
+and from every current or prior edition to adjacent editions and the latest
+issue. This is a new harness milestone, not a cosmetic afterthought.

@@ -304,3 +304,10 @@ of that passage. Make clear that it is the player's own entered text -- for a
 winning export, it may be quoted cleverly as that mayor's statement. The
 paper's editorial voice remains subject to the funny, pointed-but-not-mean
 tone rule, and non-winning export origins remain anonymous.
+
+## 2026-09-03 — [rounds, imports, user-decision]
+An open import must give every eligible other player an export opportunity in
+that round. Filing a future import order must not crowd out an export from the
+two-slot check-in. The game should defer an upcoming-order prompt when needed;
+it must not ask a player to choose their next import instead of participating
+in the current trade.

@@ -52,6 +52,11 @@ Numbered and traceable to `decisions.md` tags in brackets.
 10. Round window: 24 hours by default, configurable. [rounds, timing, Q9]
 11. Each player checks in and acts at most once per round. Their check-in
     bundles up to two pending items (see #21). [rounds, timing, Q20/21]
+11a. An eligible export to the currently open import need must never be
+     displaced by a prompt to file a future import order. If the two-slot
+     check-in would otherwise contain a pick, an export, and an import-order
+     choice, defer the future-order choice; do not make a player sit out the
+     current trade. [rounds, imports, 2026-09-03 user decision]
 12. Fixed game length target: two rotations. Players present from
     rotation 1 get 2 import turns; players who join during/after rotation
     1 get only 1 import turn. [players, length, Q5]
@@ -247,6 +252,10 @@ Deterministic checks (script/rule-based, no subjective judgment):
   the next need for that city; seeded and freeform prompts describe an
   everyday, procurable import rather than advice or civic procurement
   (#13, #13a).
+- Current-trade participation: an eligible export is present in a mayor's
+  check-in whenever an import need is open; an upcoming import-order choice is
+  deferred rather than displacing that export when the two-slot budget is full
+  (#11, #11a, #15).
 - Newspaper mechanics: publishes exactly once per round, prior editions
   remain reachable at the same URL (archive, not overwrite), an automated
   completion transaction produces the edition/notification, and city/mayor

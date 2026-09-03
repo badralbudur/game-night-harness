@@ -507,6 +507,38 @@ write_status_summary() {
   fi
 }
 
+# yaml_scalar_value <key> <file>
+# Extract the last small YAML scalar for key from an agent response. Folded
+# (`>`) and literal (`|`) blocks are joined for the dashboard-safe question.
+yaml_scalar_value() {
+  local key="$1" file="$2"
+  awk -v key="$key" '
+    function trim(s) { sub(/^[[:space:]]+/, "", s); sub(/[[:space:]]+$/, "", s); return s }
+    $0 ~ "^" key ":[[:space:]]*" {
+      value=$0
+      sub("^" key ":[[:space:]]*", "", value)
+      value=trim(value)
+      folded=(value == ">" || value == "|")
+      if (!folded) {
+        gsub(/^['\"']|['\"']$/, "", value)
+        result=value
+      } else result=""
+      next
+    }
+    folded {
+      if ($0 ~ /^[[:space:]]+/) {
+        line=$0
+        sub(/^[[:space:]]+/, "", line)
+        line=trim(line)
+        if (line != "") result=result (result == "" ? "" : " ") line
+        next
+      }
+      folded=0
+    }
+    END { print result }
+  ' "$file"
+}
+
 record_decision_request_if_present() {
   # Roles emit a schema-shaped block when only the user can resolve a
   # question. Preserve the entire raw role evidence rather than trusting a
@@ -518,7 +550,9 @@ record_decision_request_if_present() {
   fi
   local request_id question ts filename
   request_id="$(trim_whitespace "$(grep -iE '^id:[[:space:]]*' "$output_file" | tail -1 | cut -d: -f2- || true)")"
-  question="$(trim_whitespace "$(grep -iE '^question:[[:space:]]*' "$output_file" | tail -1 | cut -d: -f2- || true)")"
+  # A folded YAML question begins `question: >`; reading only that first line
+  # would persist the literal `>` instead of the user-facing question.
+  question="$(trim_whitespace "$(yaml_scalar_value question "$output_file")")"
   request_id="${request_id:-${milestone_id}-${role}-decision}"
   if [ -z "$question" ]; then
     requirement="$(trim_whitespace "$(grep -iE '^requirement:[[:space:]]*' "$output_file" | tail -1 | cut -d: -f2- || true)")"
@@ -622,7 +656,10 @@ escalate() {
   echo "Logged durably to ${TEAM_PREFIX}/escalation/${fname}" >&2
 }
 
-CURRENT_SPEC_REF="$(git -C "$HARNESS_DIR" rev-parse HEAD 2>/dev/null || echo unknown)"
+# State is keyed to the immutable user-owned spec content, not the harness
+# commit.  A process-only repair must not accidentally unpause a user decision
+# or escalation merely because it changed coordinator code.
+CURRENT_SPEC_REF="$(git -C "$HARNESS_DIR" hash-object spec.md 2>/dev/null || echo unknown)"
 
 echo "== Coordinator starting for team/${TEAM_NAME} (retry bound: ${RETRY_BOUND}, auto retries: ${AUTO_RETRIES_ENABLED}, milestones: ${#MILESTONE_IDS[@]}) =="
 
@@ -689,6 +726,27 @@ if run_fulcra file download "${TEAM_PREFIX}/decision/.latest.md" "$LATEST_DECISI
   open_decision_question="$(trim_whitespace "$(grep -oE '^question:\s*.*' "$LATEST_DECISION_MARKER" | cut -d: -f2- || true)")"
   open_decision_file="$(trim_whitespace "$(grep -oE '^decision_file:\s*.*' "$LATEST_DECISION_MARKER" | cut -d: -f2- || true)")"
   if [ "$open_decision_spec" = "$CURRENT_SPEC_REF" ] && [ "$open_decision_milestone" = "$CURRENT_MILESTONE_ID" ]; then
+    # Repair historic pointers written by the pre-folded-scalar parser. The
+    # dated decision evidence remains authoritative; this only restores its
+    # readable scheduler/dashboard projection, without clearing the blocker.
+    if { [ "$open_decision_question" = ">" ] || [ "$open_decision_question" = "|" ]; } && [ -n "$open_decision_file" ]; then
+      decision_evidence="$TMP/open-decision-evidence.md"
+      if run_fulcra file download "${TEAM_PREFIX}/decision/${open_decision_file}" "$decision_evidence" >/dev/null 2>&1; then
+        recovered_question="$(trim_whitespace "$(yaml_scalar_value question "$decision_evidence")")"
+        if [ -n "$recovered_question" ]; then
+          open_decision_question="$recovered_question"
+          {
+            echo "spec_ref: ${open_decision_spec}"
+            echo "milestone_id: ${open_decision_milestone}"
+            echo "decision_file: ${open_decision_file}"
+            echo "question: ${open_decision_question}"
+            echo "timestamp: $(now_iso)"
+          } > "$TMP/latest-decision-repaired.md"
+          upload_required "$TMP/latest-decision-repaired.md" "${TEAM_PREFIX}/decision/.latest.md" || true
+          echo "== Repaired folded decision question in ${TEAM_PREFIX}/decision/.latest.md ==" >&2
+        fi
+      fi
+    fi
     write_status_summary "DECISION REQUIRED — BLOCKED" "${CURRENT_MILESTONE_ID} remains paused for the user-only decision: ${open_decision_question:-see durable decision evidence}." "No role will be re-invoked until the user answer is recorded in decisions.md and an approved spec/config revision changes the spec reference." "Review ${TEAM_PREFIX}/decision/${open_decision_file:-.latest.md} and answer the one question through the configured origin channel."
     echo "== Pending user decision for ${CURRENT_MILESTONE_ID}; not re-invoking roles. =="
     exit 1

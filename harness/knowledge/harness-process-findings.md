@@ -125,3 +125,17 @@ identity/tone/image policy) and add M6 for publication/archive integration.
 Endgame and full integration move to M7/M8. Existing meaningful M5 branch
 work is resumed in place, not discarded. This is a milestone-design fix,
 not a deliverable patch.
+
+## Finding 8: folded YAML decision questions must survive the durable status projection (RESOLVED)
+
+**Discovered:** M11 Evaluator verdict, 2026-09-03. The role supplied a valid
+multi-line YAML `question: >` field, but the Coordinator extracted only the
+header and persisted `>` as the decision/dashboard prompt. The underlying
+verdict and dated decision evidence contained the real question, but the
+origin-facing status was not actionable.
+
+**Fix:** the Coordinator now extracts folded/literal YAML scalars, repairs an
+existing malformed decision pointer from its immutable dated evidence, and
+keys pending-state compatibility to the immutable `spec.md` blob rather than
+the overall harness commit. Therefore a process-only harness repair cannot
+silently invalidate a genuine pending user decision or escalation.

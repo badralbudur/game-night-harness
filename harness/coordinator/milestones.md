@@ -201,6 +201,25 @@ publication guard; and the Evaluator reviews rendered desktop and narrow
 layouts for a convincing, readable newspaper experience rather than a
 plain report.
 
+## M11: Everyday import categories, light city framing
+
+**Scope:** replace the civic-procurement premise exposed by the second
+smoke test. Rewrite the seeded import categories and orders around everyday,
+immediately relatable trade -- including candy, soft drinks, books, snacks,
+music, games, clothes, plants, pets, and small comforts. Retain cities as
+light social-game flavour, but remove the expectation that a player role-play
+as a real mayor or resolve a consequential municipal problem. Update order
+selection prompts, trade validation, playtest fixtures, newspaper copy, and
+endgame framing so the whole game speaks the same accessible language.
+
+**Target spec requirements:** #13, #13a, #15, #26, #30, #33.
+
+**Done when:** deterministic tests reject civic-procurement and specialist
+problem prompts from the seed bank and accept relatable everyday imports;
+the mayor-facing choice slate is reviewed with candy, soft drinks, and books
+among its concrete examples; and a full playtest plus Evaluator review shows
+that no player needs civic expertise to make a fun offer or pick.
+
 ## Milestone progress tracking
 
 The coordinator tracks current/completed milestones in the workspace at

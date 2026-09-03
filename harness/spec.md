@@ -64,12 +64,15 @@ Numbered and traceable to `decisions.md` tags in brackets.
     next import. Suggestions and freeform requests must still obey the
     configured category/repetition policy. [imports, player-agency,
     2026-08-31 user decision]
-13a. Import needs describe actual tradable imports -- e.g. food or candy,
-    materials, equipment, living things, cultural works, or specialist
-    services. They may be playful, but may not reduce to a request for
-    generic advice or civic problem solving. Exports remain free-form
-    proposals for an actual supplied import. [imports, game-content,
-    2026-08-31 user decision]
+13a. Import needs describe actual, everyday tradable things that any player
+    can readily relate to and enjoy proposing or exporting -- e.g. candy,
+    soft drinks, books, snacks, music, games, clothes, plants, pets, and
+    small comforts. The city framing is light social-game flavour, not a
+    requirement to role-play a real mayor or solve a complex municipal
+    problem. Needs may be playful, but may not reduce to generic advice,
+    civic procurement, or specialist problem solving. Exports remain
+    free-form proposals for an actual supplied import. [imports, game-design,
+    2026-09-02 user decision]
 14. Import categories may repeat across different cities, but the same
     city may not receive the same import category twice; configurable.
     [imports, config, Q22]
@@ -234,8 +237,9 @@ Deterministic checks (script/rule-based, no subjective judgment):
   but never repeats for the same city (#14), unless config overrides it.
 - Importer agency and trade semantics: the importer receives several
   eligible suggestions plus a freeform choice, and the chosen request is
-  the next need for that city; seeded and freeform prompts describe a
-  procurable import rather than advice (#13, #13a).
+  the next need for that city; seeded and freeform prompts describe an
+  everyday, procurable import rather than advice or civic procurement
+  (#13, #13a).
 - Newspaper mechanics: publishes exactly once per round, prior editions
   remain reachable at the same URL (archive, not overwrite), an automated
   completion transaction produces the edition/notification, and city/mayor

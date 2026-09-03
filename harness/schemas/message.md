@@ -11,9 +11,8 @@ convention and use it consistently across a harness run)
 - `to`: role name
 - `run_id`: which loop iteration this belongs to (integer, starts at 1)
 - `timestamp`: ISO 8601 UTC
-- `spec_ref`: pointer to the spec version this message is relative to
-  (e.g. a git commit hash of the harness repo, if spec.md is versioned in
-  git alongside the harness)
+- `spec_ref`: pointer to the immutable `spec.md` content version this
+  message is relative to (the Git blob hash of `spec.md`).
 - `body`: free text — the task instruction, feedback content, or a path
   reference to the artifact/verdict file being pointed at
 

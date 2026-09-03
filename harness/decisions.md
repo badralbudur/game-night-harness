@@ -286,3 +286,13 @@ publication's visual styling and edition images. The publication URL should
 open on the latest edition by default, with clear navigation to the archive
 and from every current or prior edition to adjacent editions and the latest
 issue. This is a new harness milestone, not a cosmetic afterthought.
+
+## 2026-09-02 — [imports, game-design, user-decision]
+Smoke-test correction: players should not have to pretend to be actual
+mayors solving real or complex municipal problems. The city framing is
+light social-game flavour, not a civic-simulation role-play requirement.
+Import categories must be everyday, immediately relatable things that
+any player can enjoy proposing or exporting -- for example candy, soft
+drinks, books, snacks, music, games, clothes, plants, pets, or small
+comforts -- rather than infrastructure, procurement, or specialist civic
+services.

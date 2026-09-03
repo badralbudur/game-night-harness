@@ -108,10 +108,10 @@ the workspace so that repeated/unattended invocations don't waste a real
 Generator+Evaluator subprocess call for no reason:
 
 1. **Already converged:** if `team/<team>/converged.md` records a PASS
-   for the *current* harness spec version (`git rev-parse HEAD` in this
-   harness repo), the coordinator exits 0 immediately without invoking
-   anyone. Revising `spec.md` and committing that change naturally
-   invalidates this (the spec_ref changes), which is the intended way to
+   for the *current* user-owned spec content version (the Git blob hash of
+   `spec.md` in this harness repo), the coordinator exits 0 immediately
+   without invoking anyone. Revising `spec.md` and committing that change
+   naturally invalidates this (the spec_ref changes), which is the intended way to
    ask for more work.
 2. **Already escalated:** if `team/<team>/escalation/.latest.md` records
    an open escalation for the current spec version, the coordinator exits

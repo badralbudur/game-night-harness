@@ -52,6 +52,11 @@ Numbered and traceable to `decisions.md` tags in brackets.
 10. Round window: 24 hours by default, configurable. [rounds, timing, Q9]
 11. Each player checks in and acts at most once per round. Their check-in
     bundles up to two pending items (see #21). [rounds, timing, Q20/21]
+11a. An eligible export to the currently open import need must never be
+     displaced by a prompt to file a future import order. If the two-slot
+     check-in would otherwise contain a pick, an export, and an import-order
+     choice, defer the future-order choice; do not make a player sit out the
+     current trade. [rounds, imports, 2026-09-03 user decision]
 12. Fixed game length target: two rotations. Players present from
     rotation 1 get 2 import turns; players who join during/after rotation
     1 get only 1 import turn. [players, length, Q5]
@@ -61,15 +66,20 @@ Numbered and traceable to `decisions.md` tags in brackets.
     city's next import: present a small set of eligible seeded suggestions
     and also accept a freeform request. The choice, rather than a hidden
     random draw or a mere addition to a shared pool, becomes that city's
-    next import. Suggestions and freeform requests must still obey the
+    next import. Ask for that choice on the city's actual import turn, not
+    prematurely: in a three-city game, each mayor therefore chooses every
+    three rounds. Suggestions and freeform requests must still obey the
     configured category/repetition policy. [imports, player-agency,
-    2026-08-31 user decision]
-13a. Import needs describe actual tradable imports -- e.g. food or candy,
-    materials, equipment, living things, cultural works, or specialist
-    services. They may be playful, but may not reduce to a request for
-    generic advice or civic problem solving. Exports remain free-form
-    proposals for an actual supplied import. [imports, game-content,
-    2026-08-31 user decision]
+    2026-08-31 and 2026-09-03 user decisions]
+13a. Import needs describe actual, everyday tradable things that any player
+    can readily relate to and enjoy proposing or exporting -- e.g. candy,
+    soft drinks, books, snacks, music, games, clothes, plants, pets, and
+    small comforts. The city framing is light social-game flavour, not a
+    requirement to role-play a real mayor or solve a complex municipal
+    problem. Needs may be playful, but may not reduce to generic advice,
+    civic procurement, or specialist problem solving. Exports remain
+    free-form proposals for an actual supplied import. [imports, game-design,
+    2026-09-02 user decision]
 14. Import categories may repeat across different cities, but the same
     city may not receive the same import category twice; configurable.
     [imports, config, Q22]
@@ -142,6 +152,13 @@ Numbered and traceable to `decisions.md` tags in brackets.
 30. Tone: funny, fun, colorful; humor is allowed to be pointed/not
     uniformly laudatory, but must not be snide or mean. [newspaper,
     endgame, Q24]
+30b. A player's freeform export is player voice, not newspaper editorial
+     voice. If its exact text would trip the editorial tone gate, publication
+     still proceeds: do not reject, rewrite, redact, or halt the game because
+     of it. Present it clearly as player-entered text -- a winning export may
+     be quoted as the winning mayor's statement. The paper's own copy remains
+     subject to #30, and #21 still prohibits identifying a non-winning
+     export's origin. [newspaper, player-voice, 2026-09-03 user decision]
 30a. The public archive must read visually as a real newspaper rather than
      a plain document: intentional editorial hierarchy, masthead, readable
      columns/department treatment, and edition images that are materially
@@ -234,8 +251,16 @@ Deterministic checks (script/rule-based, no subjective judgment):
   but never repeats for the same city (#14), unless config overrides it.
 - Importer agency and trade semantics: the importer receives several
   eligible suggestions plus a freeform choice, and the chosen request is
-  the next need for that city; seeded and freeform prompts describe a
-  procurable import rather than advice (#13, #13a).
+  the next need for that city; seeded and freeform prompts describe an
+  everyday, procurable import rather than advice or civic procurement
+  (#13, #13a).
+- Current-trade participation: an eligible export is present in a mayor's
+  check-in whenever an import need is open; an upcoming import-order choice is
+  deferred rather than displacing that export when the two-slot budget is full
+  (#11, #11a, #15).
+- Import-choice cadence: a city is asked to choose only on its actual import
+  turn -- every three rounds in a three-city game -- rather than being asked
+  to plan a later turn prematurely (#13).
 - Newspaper mechanics: publishes exactly once per round, prior editions
   remain reachable at the same URL (archive, not overwrite), an automated
   completion transaction produces the edition/notification, and city/mayor
@@ -244,6 +269,10 @@ Deterministic checks (script/rule-based, no subjective judgment):
   to the latest edition and navigation across the archive; the Evaluator
   judges the rendered hierarchy, styling, and materially game-informed
   imagery against #30a rather than accepting a plain report page.
+- Player-voice handling: executable tests prove an export that trips the
+  editorial tone register neither blocks publication nor gets rewritten;
+  the rendered attribution distinguishes player-entered wording from the
+  paper's voice, while non-winning origins remain withheld (#21, #30, #30b).
 - `config.json` is the single source for every configurable parameter;
   no role hardcodes a value that config.json defines.
 

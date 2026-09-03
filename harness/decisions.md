@@ -286,3 +286,35 @@ publication's visual styling and edition images. The publication URL should
 open on the latest edition by default, with clear navigation to the archive
 and from every current or prior edition to adjacent editions and the latest
 issue. This is a new harness milestone, not a cosmetic afterthought.
+
+## 2026-09-02 — [imports, game-design, user-decision]
+Smoke-test correction: players should not have to pretend to be actual
+mayors solving real or complex municipal problems. The city framing is
+light social-game flavour, not a civic-simulation role-play requirement.
+Import categories must be everyday, immediately relatable things that
+any player can enjoy proposing or exporting -- for example candy, soft
+drinks, books, snacks, music, games, clothes, plants, pets, or small
+comforts -- rather than infrastructure, procurement, or specialist civic
+services.
+
+## 2026-09-03 — [newspaper, player-voice, tone, user-decision]
+Publish the newspaper when a player's freeform export text would otherwise
+trip the tone gate. Do not reject, rewrite, redact, or halt the game because
+of that passage. Make clear that it is the player's own entered text -- for a
+winning export, it may be quoted cleverly as that mayor's statement. The
+paper's editorial voice remains subject to the funny, pointed-but-not-mean
+tone rule, and non-winning export origins remain anonymous.
+
+## 2026-09-03 — [rounds, imports, user-decision]
+An open import must give every eligible other player an export opportunity in
+that round. Filing a future import order must not crowd out an export from the
+two-slot check-in. The game should defer an upcoming-order prompt when needed;
+it must not ask a player to choose their next import instead of participating
+in the current trade.
+
+## 2026-09-03 — [rounds, imports, user-decision]
+In a three-city game, a mayor chooses an import every three rounds, when that
+city's import turn arrives -- not two rounds early merely because the engine
+can queue it. More generally, import-choice timing follows the city's actual
+rotation cadence; do not make players plan future imports before the current
+round makes that necessary.

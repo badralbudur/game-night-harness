@@ -201,6 +201,47 @@ publication guard; and the Evaluator reviews rendered desktop and narrow
 layouts for a convincing, readable newspaper experience rather than a
 plain report.
 
+## M11: Everyday import categories, light city framing
+
+**Scope:** replace the civic-procurement premise exposed by the second
+smoke test. Rewrite the seeded import categories and orders around everyday,
+immediately relatable trade -- including candy, soft drinks, books, snacks,
+music, games, clothes, plants, pets, and small comforts. Retain cities as
+light social-game flavour, but remove the expectation that a player role-play
+as a real mayor or resolve a consequential municipal problem. Update order
+selection prompts, trade validation, playtest fixtures, newspaper copy, and
+endgame framing so the whole game speaks the same accessible language.
+
+**Target spec requirements:** #13, #13a, #15, #21, #26, #30, #30b, #33.
+
+**Done when:** deterministic tests reject civic-procurement and specialist
+problem prompts from the seed bank and accept relatable everyday imports;
+the mayor-facing choice slate is reviewed with candy, soft drinks, and books
+among its concrete examples; and a full playtest plus Evaluator review shows
+that no player needs civic expertise to make a fun offer or pick. Resolve the
+player-voice policy at the same time: a user-entered export that trips the
+editorial tone register is published verbatim and marked as player voice rather
+than blocking the round or being rewritten; the paper's own copy remains tone
+gated and non-winning origins remain anonymous.
+
+## M12: Preserve current-trade exports when order filing competes
+
+**Scope:** fix the two-slot collision and premature import-order timing found
+in smoke test 3. The importer-choice mechanic must not suppress an eligible
+player's export to the currently open need, and it must ask a mayor to choose
+only when that city's import turn arrives -- every three rounds in a three-city
+game, not two rounds early. Preserve the existing pick-before-export deadline
+priority and the two-slot maximum.
+
+**Target spec requirements:** #9–#11, #11a, #13–#16, #23.
+
+**Done when:** deterministic tests construct a mayor with a winner pick, a
+current export opportunity, and a later import turn, then prove the check-in
+offers the pick and export while withholding the future choice. A three-city
+trace proves a mayor chooses an import only every three rounds. A full playtest
+proves every eligible city has an export opportunity in every open-import round
+and no slot exceeds the two-action budget.
+
 ## Milestone progress tracking
 
 The coordinator tracks current/completed milestones in the workspace at

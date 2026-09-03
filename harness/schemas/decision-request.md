@@ -11,7 +11,7 @@ decision_request: true
 id: <stable slug, e.g. image-modality-m5>
 from: <role>
 milestone: <M# or phase>
-spec_ref: <harness git commit>
+spec_ref: <Git blob hash of immutable spec.md content>
 priority: blocking | before-next-milestone | informational
 question: <exactly one concise question for the user>
 context: <short factual evidence; do not argue for an unstated preference>

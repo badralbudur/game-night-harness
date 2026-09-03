@@ -311,3 +311,10 @@ that round. Filing a future import order must not crowd out an export from the
 two-slot check-in. The game should defer an upcoming-order prompt when needed;
 it must not ask a player to choose their next import instead of participating
 in the current trade.
+
+## 2026-09-03 — [rounds, imports, user-decision]
+In a three-city game, a mayor chooses an import every three rounds, when that
+city's import turn arrives -- not two rounds early merely because the engine
+can queue it. More generally, import-choice timing follows the city's actual
+rotation cadence; do not make players plan future imports before the current
+round makes that necessary.

@@ -66,9 +66,11 @@ Numbered and traceable to `decisions.md` tags in brackets.
     city's next import: present a small set of eligible seeded suggestions
     and also accept a freeform request. The choice, rather than a hidden
     random draw or a mere addition to a shared pool, becomes that city's
-    next import. Suggestions and freeform requests must still obey the
+    next import. Ask for that choice on the city's actual import turn, not
+    prematurely: in a three-city game, each mayor therefore chooses every
+    three rounds. Suggestions and freeform requests must still obey the
     configured category/repetition policy. [imports, player-agency,
-    2026-08-31 user decision]
+    2026-08-31 and 2026-09-03 user decisions]
 13a. Import needs describe actual, everyday tradable things that any player
     can readily relate to and enjoy proposing or exporting -- e.g. candy,
     soft drinks, books, snacks, music, games, clothes, plants, pets, and
@@ -256,6 +258,9 @@ Deterministic checks (script/rule-based, no subjective judgment):
   check-in whenever an import need is open; an upcoming import-order choice is
   deferred rather than displacing that export when the two-slot budget is full
   (#11, #11a, #15).
+- Import-choice cadence: a city is asked to choose only on its actual import
+  turn -- every three rounds in a three-city game -- rather than being asked
+  to plan a later turn prematurely (#13).
 - Newspaper mechanics: publishes exactly once per round, prior editions
   remain reachable at the same URL (archive, not overwrite), an automated
   completion transaction produces the edition/notification, and city/mayor

@@ -226,17 +226,19 @@ gated and non-winning origins remain anonymous.
 
 ## M12: Preserve current-trade exports when order filing competes
 
-**Scope:** fix the two-slot collision found in smoke test 3. The importer-choice
-mechanic must not suppress an eligible player's export to the currently open
-need. Defer future-order selection until it fits the check-in window (or permit
-it before the round), while preserving the existing pick-before-export deadline
+**Scope:** fix the two-slot collision and premature import-order timing found
+in smoke test 3. The importer-choice mechanic must not suppress an eligible
+player's export to the currently open need, and it must ask a mayor to choose
+only when that city's import turn arrives -- every three rounds in a three-city
+game, not two rounds early. Preserve the existing pick-before-export deadline
 priority and the two-slot maximum.
 
 **Target spec requirements:** #9–#11, #11a, #13–#16, #23.
 
 **Done when:** deterministic tests construct a mayor with a winner pick, a
-current export opportunity, and an upcoming import choice, then prove the
-check-in offers the pick and export while deferring the choice. A full playtest
+current export opportunity, and a later import turn, then prove the check-in
+offers the pick and export while withholding the future choice. A three-city
+trace proves a mayor chooses an import only every three rounds. A full playtest
 proves every eligible city has an export opportunity in every open-import round
 and no slot exceeds the two-action budget.
 

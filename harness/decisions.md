@@ -296,3 +296,11 @@ any player can enjoy proposing or exporting -- for example candy, soft
 drinks, books, snacks, music, games, clothes, plants, pets, or small
 comforts -- rather than infrastructure, procurement, or specialist civic
 services.
+
+## 2026-09-03 — [newspaper, player-voice, tone, user-decision]
+Publish the newspaper when a player's freeform export text would otherwise
+trip the tone gate. Do not reject, rewrite, redact, or halt the game because
+of that passage. Make clear that it is the player's own entered text -- for a
+winning export, it may be quoted cleverly as that mayor's statement. The
+paper's editorial voice remains subject to the funny, pointed-but-not-mean
+tone rule, and non-winning export origins remain anonymous.

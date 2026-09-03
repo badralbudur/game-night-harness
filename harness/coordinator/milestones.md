@@ -212,13 +212,17 @@ as a real mayor or resolve a consequential municipal problem. Update order
 selection prompts, trade validation, playtest fixtures, newspaper copy, and
 endgame framing so the whole game speaks the same accessible language.
 
-**Target spec requirements:** #13, #13a, #15, #26, #30, #33.
+**Target spec requirements:** #13, #13a, #15, #21, #26, #30, #30b, #33.
 
 **Done when:** deterministic tests reject civic-procurement and specialist
 problem prompts from the seed bank and accept relatable everyday imports;
 the mayor-facing choice slate is reviewed with candy, soft drinks, and books
 among its concrete examples; and a full playtest plus Evaluator review shows
-that no player needs civic expertise to make a fun offer or pick.
+that no player needs civic expertise to make a fun offer or pick. Resolve the
+player-voice policy at the same time: a user-entered export that trips the
+editorial tone register is published verbatim and marked as player voice rather
+than blocking the round or being rewritten; the paper's own copy remains tone
+gated and non-winning origins remain anonymous.
 
 ## Milestone progress tracking
 

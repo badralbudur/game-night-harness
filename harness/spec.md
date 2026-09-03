@@ -145,6 +145,13 @@ Numbered and traceable to `decisions.md` tags in brackets.
 30. Tone: funny, fun, colorful; humor is allowed to be pointed/not
     uniformly laudatory, but must not be snide or mean. [newspaper,
     endgame, Q24]
+30b. A player's freeform export is player voice, not newspaper editorial
+     voice. If its exact text would trip the editorial tone gate, publication
+     still proceeds: do not reject, rewrite, redact, or halt the game because
+     of it. Present it clearly as player-entered text -- a winning export may
+     be quoted as the winning mayor's statement. The paper's own copy remains
+     subject to #30, and #21 still prohibits identifying a non-winning
+     export's origin. [newspaper, player-voice, 2026-09-03 user decision]
 30a. The public archive must read visually as a real newspaper rather than
      a plain document: intentional editorial hierarchy, masthead, readable
      columns/department treatment, and edition images that are materially
@@ -248,6 +255,10 @@ Deterministic checks (script/rule-based, no subjective judgment):
   to the latest edition and navigation across the archive; the Evaluator
   judges the rendered hierarchy, styling, and materially game-informed
   imagery against #30a rather than accepting a plain report page.
+- Player-voice handling: executable tests prove an export that trips the
+  editorial tone register neither blocks publication nor gets rewritten;
+  the rendered attribution distinguishes player-entered wording from the
+  paper's voice, while non-winning origins remain withheld (#21, #30, #30b).
 - `config.json` is the single source for every configurable parameter;
   no role hardcodes a value that config.json defines.
 
